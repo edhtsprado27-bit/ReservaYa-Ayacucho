@@ -1,0 +1,50 @@
+flowchart TB
+    web["<b>Aplicación web</b><br/>[Next.js]"]
+
+    subgraph api["API ReservaYa [Contenedor · NestJS]"]
+        rest["<b>API REST</b><br/>Rutas /api/v1, JWT, validación,<br/>errores · invoca a todos los módulos"]
+        usuarios["<b>Usuarios</b><br/>Registro, login, roles"]
+        canchas["<b>Canchas</b><br/>Locales con ubicación,<br/>búsqueda por distrito y cercanía"]
+        tareas["<b>Tareas programadas</b><br/>Expirar reservas,<br/>recordatorios"]
+        horarios["<b>Horarios</b><br/>Disponibilidad,<br/>tarifas pico/normal"]
+        reservas["<b>Reservas</b><br/>Crear, cancelar,<br/>evitar reservas dobles"]
+        pagos["<b>Pagos</b><br/>Comprobantes Yape/Plin,<br/>validación del dueño"]
+        ia["<b>Asistente IA</b><br/>Recomendaciones, chat,<br/>lectura de comprobantes"]
+        notif["<b>Notificaciones</b><br/>Avisos de reservas"]
+        adminm["<b>Administración</b><br/>Aprobar canchas,<br/>estadísticas"]
+    end
+
+    bd[("<b>Base de datos</b><br/>[PostgreSQL]")]
+    cache[("<b>Caché y bloqueos</b><br/>[Redis]")]
+    storage[("<b>Almacenamiento</b><br/>[Supabase Storage]")]
+    openrouter["<b>OpenRouter</b><br/>[Sistema externo]"]
+    correo["<b>Servicio de correo</b><br/>[Sistema externo]"]
+    maps["<b>Google Maps</b><br/>[Sistema externo]"]
+
+    web -- "HTTPS/JSON" --> rest
+    rest -- "invoca los casos de uso<br/>de cada módulo" --> reservas
+    canchas -- "valida dueño" --> usuarios
+    horarios -- "asocia a cancha" --> canchas
+    reservas -- "precio y disponibilidad" --> horarios
+    pagos -- "actualiza estado" --> reservas
+    pagos -- "lee comprobante" --> ia
+    reservas -. "evento: cambio de estado" .-> notif
+    adminm -- "aprueba" --> canchas
+
+    reservas -- "Adapter · bloqueo" --> cache
+    horarios -- "Decorator · caché" --> cache
+    pagos -- "Adapter" --> storage
+    ia -- "Adapter · HTTPS" --> openrouter
+    notif -- "Adapter · HTTPS" --> correo
+    canchas -- "Adapter · geocodificación" --> maps
+    tareas -- "expira" --> reservas
+    tareas -- "recordatorios" --> notif
+    api -- "Repository · SQL" --> bd
+
+    classDef contenedor fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef componente fill:#85bbf0,stroke:#5d82a8,color:#000
+    classDef externo fill:#999999,stroke:#6b6b6b,color:#fff
+    class web,bd,cache,storage contenedor
+    class rest,usuarios,canchas,horarios,reservas,pagos,ia,notif,adminm,tareas componente
+    class openrouter,correo,maps externo
+    style api fill:none,stroke:#444,stroke-dasharray:6 4
