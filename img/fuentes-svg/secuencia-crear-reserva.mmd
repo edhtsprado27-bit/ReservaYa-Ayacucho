@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    actor J as Jugador web
+    participant C as ReservaController
+    participant U as CrearReservaUseCase
+    participant F as FranjaHoraria
+    participant B as BloqueoHorarioPort
+    participant T as TarifaPort
+    participant R as Reserva
+    participant P as ReservaRepository
+    participant DB as PostgreSQL
+
+    J->>C: POST /api/v1/reservas
+    C->>U: ejecutar(cmd)
+    U->>F: new FranjaHoraria(...) · RN-02, RN-03
+    U->>B: bloquear(canchaId, franja, 10 min)
+    alt Bloqueo obtenido
+        B-->>U: true
+        U->>T: precioPorHora(canchaId, franja)
+        T-->>U: precio
+        U->>R: crear(...) · RN-01 · PENDIENTE_PAGO
+        U->>R: total() · RN-04
+        U->>P: guardar(reserva)
+        P->>DB: INSERT (restricción EXCLUDE)
+        C-->>J: 201 Created (reservaId, total, expiraEn)
+    else Horario ocupado
+        B-->>U: false
+        C-->>J: 409 Conflict
+    end

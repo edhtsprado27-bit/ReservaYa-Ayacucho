@@ -1,0 +1,86 @@
+classDiagram
+    direction TB
+
+    class ReservaController {
+        -crearReserva: CrearReservaUseCase
+        +crear(dto, req) Respuesta
+    }
+    class CrearReservaCommand {
+        +jugadorId: string
+        +canchaId: string
+        +fecha: string
+        +horaInicio: number
+        +horaFin: number
+    }
+    class CrearReservaUseCase {
+        -reservas: ReservaRepository
+        -bloqueo: BloqueoHorarioPort
+        -tarifas: TarifaPort
+        +ejecutar(cmd) Reserva
+    }
+    class Reserva {
+        +id: string
+        +jugadorId: string
+        +canchaId: string
+        +precioPorHora: number
+        -estado: EstadoReserva
+        +expiraEn: Date
+        +crear(jugadorId, canchaId, franja, precio)$ Reserva
+        +total() number
+        +registrarComprobante() void
+        +cancelar() void
+    }
+    class FranjaHoraria {
+        +fecha: string
+        +horaInicio: number
+        +horaFin: number
+        +horas() number[]
+    }
+    class EstadoReserva {
+        <<enumeration>>
+        PENDIENTE_PAGO
+        EN_VERIFICACION
+        CONFIRMADA
+        RECHAZADA
+        CANCELADA
+        EXPIRADA
+    }
+    class ReservaRepository {
+        <<interface>>
+        +guardar(reserva) void
+        +buscarPorId(id) Reserva
+    }
+    class BloqueoHorarioPort {
+        <<interface>>
+        +bloquear(canchaId, franja, ms) boolean
+        +liberar(canchaId, franja) void
+    }
+    class TarifaPort {
+        <<interface>>
+        +precioPorHora(canchaId, franja) number
+    }
+    class PostgresReservaRepository {
+        -db: Pool
+        +guardar(reserva) void
+        +buscarPorId(id) Reserva
+    }
+    class RedisBloqueoHorarioAdapter {
+        -redis: Redis
+        +bloquear(canchaId, franja, ms) boolean
+        +liberar(canchaId, franja) void
+    }
+    class HorariosTarifaAdapter {
+        +precioPorHora(canchaId, franja) number
+    }
+
+    ReservaController ..> CrearReservaCommand : «crea»
+    ReservaController --> CrearReservaUseCase
+    CrearReservaUseCase --> ReservaRepository
+    CrearReservaUseCase --> BloqueoHorarioPort
+    CrearReservaUseCase --> TarifaPort
+    CrearReservaUseCase ..> Reserva : «crea»
+    Reserva *-- "1" FranjaHoraria
+    Reserva --> EstadoReserva
+    PostgresReservaRepository ..|> ReservaRepository
+    RedisBloqueoHorarioAdapter ..|> BloqueoHorarioPort
+    HorariosTarifaAdapter ..|> TarifaPort

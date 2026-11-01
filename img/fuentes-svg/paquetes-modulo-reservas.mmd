@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph modulo["modules/reservas"]
+        pres["<b>presentacion</b><br/>reserva.controller.ts<br/>crear-reserva.dto.ts"]
+        app["<b>aplicacion</b><br/>crear-reserva.use-case.ts<br/>crear-reserva.command.ts"]
+        dom["<b>dominio</b><br/>reserva.ts · franja-horaria.ts · estado-reserva.ts<br/>reserva.repository.ts · bloqueo-horario.port.ts · tarifa.port.ts"]
+        infra["<b>infraestructura</b><br/>postgres-reserva.repository.ts<br/>redis-bloqueo-horario.adapter.ts<br/>horarios-tarifa.adapter.ts"]
+        comp["<b>reservas.module.ts</b><br/>raíz de composición"]
+    end
+
+    pres -->|importa| app
+    app -->|importa| dom
+    infra -->|implementa| dom
+    comp -.-> pres & app & infra
+
+    style pres fill:#e3f2fd,stroke:#1565c0
+    style app fill:#e8f5e9,stroke:#2e7d32
+    style dom fill:#fff8e1,stroke:#f9a825
+    style infra fill:#fce4ec,stroke:#ad1457
+    style comp fill:#f5f5f5,stroke:#666
