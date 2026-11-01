@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor J as Jugador web
+    participant RC as ReservaController
+    participant UC as CrearReservaUseCase
+    participant BL as BloqueoHorarioPort (Redis)
+    participant TA as TarifaPort
+    participant RS as Reserva
+    participant RR as ReservaRepository (PostgreSQL)
+    participant PG as RegistrarComprobanteUseCase
+    participant IA as IaComprobanteAdapter (OpenRouter)
+    actor D as Dueño de cancha
+
+    J->>RC: POST /api/v1/reservas (cancha, fecha, horario, JWT)
+    RC->>UC: ejecutar(cmd)
+    UC->>BL: bloquear(cancha, franja, 10 min)
+    alt Horario libre
+        BL-->>UC: true
+        UC->>TA: precioPorHora(cancha, franja)
+        TA-->>UC: precio (pico o normal)
+        UC->>RS: crear(...) → PENDIENTE_PAGO, total()
+        UC->>RR: guardar(reserva)
+        RC-->>J: 201 Created (código, monto, Yape/Plin del dueño)
+        J->>PG: POST /reservas/:id/comprobante (captura)
+        PG->>IA: verificar(imagen, monto)
+        IA-->>PG: ResultadoVerificacion
+        PG-->>J: Reserva EN_VERIFICACION
+        D->>PG: Confirma el pago (ValidarPagoUseCase)
+        PG-->>J: Reserva CONFIRMADA + notificación
+    else Horario ocupado
+        BL-->>UC: false
+        RC-->>J: 409 Conflict
+    end
+    Note over BL,RR: Sin comprobante en 10 min → el bloqueo vence y la reserva pasa a EXPIRADA
