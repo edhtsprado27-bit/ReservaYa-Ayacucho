@@ -1,0 +1,17 @@
+flowchart TB
+    subgraph infra["INFRAESTRUCTURA · PostgreSQL (Supabase) · Redis (Upstash) · Supabase Storage · OpenRouter · Correo"]
+        subgraph pres["PRESENTACIÓN · Next.js (frontend) · Controladores NestJS"]
+            subgraph app["APLICACIÓN · Casos de uso: CrearReserva · RegistrarComprobante · ValidarPago · BuscarCanchas"]
+                subgraph dom["DOMINIO"]
+                    d["Entidades: Reserva · Cancha · Horario · Pago<br/>Objetos de valor: FranjaHoraria · Tarifa<br/>Puertos: ReservaRepository · BloqueoHorarioPort · IaPort"]
+                end
+            end
+        end
+    end
+    regla["Regla de dependencia:<br/>las dependencias apuntan hacia el dominio"]
+
+    style infra fill:#fce4ec,stroke:#ad1457
+    style pres fill:#e3f2fd,stroke:#1565c0
+    style app fill:#e8f5e9,stroke:#2e7d32
+    style dom fill:#fff8e1,stroke:#f9a825
+    style regla fill:#fff,stroke:#999,stroke-dasharray:4 3
