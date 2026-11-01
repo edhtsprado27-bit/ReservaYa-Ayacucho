@@ -1,0 +1,14 @@
+flowchart LR
+    S["<b>S · Responsabilidad única</b><br/>ReservaController · CrearReservaUseCase<br/>Reserva · PostgresReservaRepository"]
+    O["<b>O · Abierto/cerrado</b><br/>Nuevo adaptador de bloqueo<br/>sin tocar el caso de uso"]
+    L["<b>L · Sustitución de Liskov</b><br/>Redis y Memoria devuelven<br/>el mismo resultado"]
+    I["<b>I · Segregación de interfaces</b><br/>BloqueoHorarioPort · ReservaRepository<br/>TarifaPort"]
+    D["<b>D · Inversión de dependencias</b><br/>El caso de uso recibe interfaces<br/>reservas.module.ts las conecta"]
+
+    S --> O --> L --> I --> D
+
+    style S fill:#e3f2fd,stroke:#1565c0
+    style O fill:#e8f5e9,stroke:#2e7d32
+    style L fill:#fff8e1,stroke:#f9a825
+    style I fill:#fce4ec,stroke:#ad1457
+    style D fill:#ede7f6,stroke:#4527a0
