@@ -1,0 +1,36 @@
+flowchart LR
+    subgraph pres["Presentación"]
+        web["Aplicación web<br/>Next.js"]
+        rest["API REST<br/>Controladores NestJS"]
+    end
+    subgraph app["Aplicación"]
+        uc1["CrearReserva"]
+        uc2["RegistrarComprobante"]
+        uc3["ValidarPago"]
+        uc4["BuscarCanchas"]
+        uc5["ConsultarAsistente"]
+    end
+    subgraph dom["Dominio"]
+        ent["Entidades<br/>Reserva · Cancha · Horario · Pago"]
+        ports["Puertos<br/>ReservaRepository · BloqueoHorarioPort<br/>ComprobanteStoragePort · IaPort"]
+    end
+    subgraph infra["Infraestructura"]
+        pg["Repositorios<br/>PostgreSQL"]
+        rd["Adaptador Redis<br/>bloqueos y caché"]
+        st["Adaptador<br/>Supabase Storage"]
+        or["Adaptador<br/>OpenRouter"]
+        ml["Adaptador<br/>correo"]
+    end
+
+    web --> rest --> app
+    app --> dom
+    pg -.->|implementa| ports
+    rd -.->|implementa| ports
+    st -.->|implementa| ports
+    or -.->|implementa| ports
+    ml -.->|implementa| ports
+
+    style pres fill:#e3f2fd,stroke:#1565c0
+    style app fill:#e8f5e9,stroke:#2e7d32
+    style dom fill:#fff8e1,stroke:#f9a825
+    style infra fill:#fce4ec,stroke:#ad1457
