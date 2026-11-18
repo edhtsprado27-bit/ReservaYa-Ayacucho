@@ -4,7 +4,6 @@
 // Modos: ingresar · crear cuenta (jugador o dueño) · recuperar contraseña.
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { clienteNavegador } from "@/lib/auth/cliente";
 import type { Estadio } from "./estadio3d";
@@ -57,7 +56,6 @@ export default function LoginEstadio({
   modoInicial: ModoLogin;
   aviso?: string;
 }) {
-  const router = useRouter();
   const [modo, setModo] = useState<ModoLogin>(modoInicial);
   const [msg, setMsg] = useState(aviso ?? "");
   const [enviando, setEnviando] = useState(false);
@@ -109,9 +107,10 @@ export default function LoginEstadio({
   };
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
 
+  // Carga completa de la página: así todo se vuelve a armar con la sesión nueva
+  // (más seguro que navegar dentro de la app justo después de iniciar sesión).
   const entrar = () => {
-    router.replace(next);
-    router.refresh();
+    window.location.assign(next);
   };
 
   async function enviar(e: React.FormEvent) {

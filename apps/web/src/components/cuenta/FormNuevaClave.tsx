@@ -1,11 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clienteNavegador } from "@/lib/auth/cliente";
 
 export default function FormNuevaClave() {
-  const router = useRouter();
   const [clave, setClave] = useState("");
   const [repetir, setRepetir] = useState("");
   const [msg, setMsg] = useState("");
@@ -27,8 +25,9 @@ export default function FormNuevaClave() {
       );
     }
     setMsg("¡Contraseña actualizada!");
-    router.replace("/mi-cuenta");
-    router.refresh();
+    // La sesión cambió: carga completa para que ninguna parte quede con la sesión anterior
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign("/mi-cuenta");
   }
 
   return (
