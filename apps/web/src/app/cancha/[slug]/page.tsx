@@ -1,0 +1,87 @@
+// Página de un local: datos, cómo llegar y la grilla para reservar.
+// /cancha/<slug>?fecha=AAAA-MM-DD&cancha=<id>&desde=HH:MM&hasta=HH:MM (lo último es opcional)
+
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
+import Cabecera from "@/components/Cabecera";
+import ReservaCancha from "@/components/reservas/ReservaCancha";
+import { enlaceGoogleMaps, enlaceWaze } from "@/data/canchas";
+import { obtenerPerfil } from "@/lib/auth/perfil";
+import { distritoAWeb } from "@/lib/canchas-db";
+import { aErrorCatalogo } from "@/lib/catalogo-servidor";
+import { fechaLima, type LocalPublico } from "@/lib/reservas";
+import { leerLocal } from "@/lib/reservas-servidor";
+
+export const metadata: Metadata = { title: "Reservar cancha · ReservaYa Ayacucho" };
+
+const texto = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
+
+async function Ficha({ params, searchParams }: PageProps<"/cancha/[slug]">) {
+  const [{ slug }, sp, perfil] = await Promise.all([params, searchParams, obtenerPerfil()]);
+
+  let local: LocalPublico | null;
+  try {
+    local = await leerLocal(slug);
+  } catch (e) {
+    return <p className="aviso aviso--error">{aErrorCatalogo(e).message}</p>;
+  }
+  if (!local) {
+    return (
+      <div className="titulo">
+        <h1>No encontramos esta cancha</h1>
+        <p>
+          Puede que todavía esté en revisión o que ya no esté publicada. <Link href="/">Volver al mapa</Link>
+        </p>
+      </div>
+    );
+  }
+
+  const telefono = local.telefono?.replace(/\D/g, "");
+  return (
+    <>
+      <div className="titulo">
+        <h1>{local.nombre}</h1>
+        <p>
+          {distritoAWeb(local.distrito)} · {local.direccion}
+          {local.referencia ? ` (${local.referencia})` : ""}
+        </p>
+      </div>
+      <div className="ficha-acciones">
+        <a className="boton boton--claro" href={enlaceGoogleMaps(local)} target="_blank" rel="noopener noreferrer">
+          Cómo llegar
+        </a>
+        <a className="boton boton--claro" href={enlaceWaze(local)} target="_blank" rel="noopener noreferrer">
+          Waze
+        </a>
+        {telefono && (
+          <a className="boton boton--claro" href={`tel:${telefono}`}>
+            Llamar al {local.telefono}
+          </a>
+        )}
+      </div>
+      <ReservaCancha
+        local={local}
+        conSesion={!!perfil}
+        hoy={fechaLima()}
+        inicial={{ fecha: texto(sp.fecha), cancha: texto(sp.cancha), desde: texto(sp.desde), hasta: texto(sp.hasta) }}
+      />
+    </>
+  );
+}
+
+export default function CanchaPage(props: PageProps<"/cancha/[slug]">) {
+  return (
+    <>
+      <Cabecera />
+      <main className="envoltura pagina-angosta">
+        <nav className="migas">
+          <Link href="/">← Volver al mapa</Link>
+        </nav>
+        <Suspense fallback={<p className="meta">Cargando cancha…</p>}>
+          <Ficha {...props} />
+        </Suspense>
+      </main>
+    </>
+  );
+}

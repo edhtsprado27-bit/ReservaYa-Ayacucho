@@ -5,6 +5,7 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import Link from "next/link";
 import { useEffect } from "react";
 import { MapContainer, Marker, Popup, TileLayer, Circle, useMap, useMapEvents } from "react-leaflet";
 import {
@@ -114,6 +115,11 @@ export default function MapaCanchas({ canchas, seleccionada, onSeleccionar, miUb
               {c.telefono ? <span>Tel. {c.telefono}</span> : null}
               {c.precioDesde ? <span>Desde S/ {c.precioDesde} por hora</span> : null}
               <div className="popup-botones">
+                {c.slug && !enRevision.includes(c.id) && (
+                  <Link className="popup-reservar" href={`/cancha/${c.slug}`}>
+                    Reservar
+                  </Link>
+                )}
                 <a href={enlaceGoogleMaps(c)} target="_blank" rel="noopener noreferrer">
                   Cómo llegar · Google Maps
                 </a>

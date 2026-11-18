@@ -131,3 +131,74 @@ a.boton { display: inline-flex; align-items: center; justify-content: center; te
 .revision-rechazo { display: flex; flex-direction: column; gap: 8px; flex: 1 1 260px; }
 .revision-rechazo label, .formulario-cuenta label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 14px; }
 .cuenta-espera { display: inline-block; width: 96px; height: 40px; }
+
+/* Reservas (paso 5): ficha del local, grilla de horarios y mis reservas */
+.migas { padding-top: 16px; font-size: 14px; }
+.migas a, .titulo p a, .meta a, .vacio a { color: var(--naranja-texto); font-weight: 700; }
+.ficha-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.reserva { background: var(--superficie); border: 1px solid var(--linea); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.reserva-titulo { margin: 0; font-family: var(--fuente-titulo), sans-serif; font-size: 26px; }
+.dias { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.dia { flex: none; scroll-snap-align: start; min-width: 72px; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 6px 10px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); cursor: pointer; line-height: 1.2; }
+.dia span { font-size: 13px; color: var(--tenue); font-weight: 600; }
+.dia strong { font-size: 15px; }
+.dia[aria-pressed="true"] { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+.dia[aria-pressed="true"] span { color: #c9d3df; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--tenue); }
+.leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.punto { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--linea); }
+.punto--libre { background: var(--superficie); }
+.punto--elegido { background: var(--naranja); border-color: var(--naranja); }
+.punto--ocupado { background: repeating-linear-gradient(135deg, #e3e7e2 0 3px, #f3f5f2 3px 6px); }
+.punto--tuyo { background: var(--tinta); border-color: var(--tinta); }
+.grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.grilla--cargando { opacity: .55; }
+.turno { min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 6px; border: 1px solid var(--linea); border-radius: 12px; background: var(--superficie); cursor: pointer; line-height: 1.2; }
+.turno strong { font-size: 17px; }
+.turno small { font-size: 13px; font-weight: 700; color: var(--naranja-texto); }
+.turno--libre:hover { border-color: var(--naranja); }
+.turno--elegido { background: var(--naranja); border-color: var(--naranja); color: #0b0b0b; }
+.turno--elegido small { color: #0b0b0b; }
+.turno--ocupado, .turno--cerrado { background: repeating-linear-gradient(135deg, #e3e7e2 0 6px, #f3f5f2 6px 12px); color: var(--tenue); cursor: not-allowed; }
+.turno--ocupado small, .turno--cerrado small { color: var(--tenue); }
+.turno--tuyo { background: var(--tinta); border-color: var(--tinta); color: #fff; cursor: default; }
+.turno--tuyo small { color: #c9d3df; }
+.turno:disabled { opacity: 1; }
+.resumen-reserva { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 -18px -18px; padding: 12px 18px; background: #fff8f1; border-top: 1px solid #f3d3b5; border-radius: 0 0 14px 14px; }
+.resumen-datos { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.resumen-datos span { font-size: 14px; color: var(--tenue); }
+.resumen-reserva .boton { min-width: 150px; }
+@media (max-width: 520px) { .resumen-reserva .boton { width: 100%; } }
+.letra-chica { font-size: 13px; margin: 0; }
+.enlace--reservar { background: var(--naranja); color: #0b0b0b; }
+.popup-botones a.popup-reservar { background: var(--tinta); color: #fff !important; }
+
+.estado { flex: none; align-self: center; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; background: #e7ece5; color: var(--tenue); }
+.estado--pending_payment { background: #fff1d6; color: #7a4b00; }
+.estado--payment_review { background: #e3eefc; color: #1d4f91; }
+.estado--confirmed, .estado--completed { background: #dcf3e4; color: #17603a; }
+.estado--cancelled, .estado--no_show { background: #fde4e1; color: #8a1c10; }
+.lista-reservas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.item-reserva { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 12px; color: inherit; text-decoration: none; }
+.item-reserva:hover { border-color: var(--naranja); }
+.item-reserva-fecha, .item-reserva-lugar { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.item-reserva-fecha { flex: 0 0 210px; }
+.item-reserva-lugar { flex: 1 1 200px; }
+.item-reserva .estado { margin-left: auto; }
+@media (max-width: 520px) { .item-reserva-fecha { flex-basis: 100%; } }
+.ticket-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.ticket-cabeza h2 { font-size: 22px; }
+.codigo { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; letter-spacing: .06em; }
+.montos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.montos div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--fondo); }
+.montos span { font-size: 13px; color: var(--tenue); font-weight: 600; }
+.montos strong { font-size: 20px; }
+@media (max-width: 520px) { .montos { grid-template-columns: 1fr; } .montos div { flex-direction: row; justify-content: space-between; align-items: baseline; } }
+.panel--pago { border-color: #f3d3b5; background: #fff8f1; }
+.panel--pago p { margin: 0; }
+.cuenta-regresiva { margin: 0; font-size: 18px; }
+.cuenta-regresiva strong { font-family: var(--fuente-titulo), sans-serif; font-size: 34px; font-variant-numeric: tabular-nums; color: var(--naranja-texto); }
+.cuenta-regresiva--poco strong { color: #b42318; }
+.cuenta-regresiva--fin { font-weight: 700; color: #8a1c10; }
+.confirmar-cancelar { flex-basis: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid #f1b8b0; border-radius: 12px; background: #fff5f4; }
+.confirmar-cancelar p { margin: 0; }

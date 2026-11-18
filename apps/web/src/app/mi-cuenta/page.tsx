@@ -4,13 +4,26 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import BotonSalir from "@/components/cuenta/BotonSalir";
+import ListaReservas from "@/components/reservas/ListaReservas";
 import { obtenerPerfil, ROL_TEXTO } from "@/lib/auth/perfil";
+import { crearClienteServidor } from "@/lib/auth/servidor";
+import { aErrorCatalogo } from "@/lib/catalogo-servidor";
+import type { Reserva } from "@/lib/reservas";
+import { misReservas } from "@/lib/reservas-servidor";
 
 export const metadata: Metadata = { title: "Mi cuenta · ReservaYa Ayacucho" };
 
 async function Contenido() {
   const perfil = await obtenerPerfil();
   if (!perfil) redirect("/login?next=/mi-cuenta");
+
+  let reservas: Reserva[] = [];
+  let errorReservas: string | null = null;
+  try {
+    reservas = await misReservas(await crearClienteServidor());
+  } catch (e) {
+    errorReservas = aErrorCatalogo(e).message;
+  }
 
   return (
     <>
@@ -43,12 +56,18 @@ async function Contenido() {
         </dl>
       </section>
 
-      {perfil.rol === "jugador" && (
-        <section className="panel" aria-labelledby="t-reservas">
-          <h2 id="t-reservas">Mis reservas</h2>
-          <p className="meta">Todavía no tienes reservas. Busca una cancha en el mapa para empezar.</p>
-        </section>
-      )}
+      <section className="panel" id="mis-reservas" aria-labelledby="t-reservas">
+        <h2 id="t-reservas">Mis reservas</h2>
+        {errorReservas ? (
+          <p className="aviso aviso--error">{errorReservas}</p>
+        ) : reservas.length ? (
+          <ListaReservas reservas={reservas} />
+        ) : (
+          <p className="meta">
+            Todavía no tienes reservas. <Link href="/">Busca una cancha en el mapa</Link> y toca “Reservar”.
+          </p>
+        )}
+      </section>
 
       <div className="acciones-cuenta">
         {perfil.rol === "dueno" && (

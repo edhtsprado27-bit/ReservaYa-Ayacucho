@@ -25,7 +25,7 @@ const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   FALTA_MIGRACION: {
     mensaje:
-      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004, 005 y 006 en el SQL Editor.",
+      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 007 en el SQL Editor.",
     status: 502,
   },
   SIN_SESION: { mensaje: "Inicia sesión para continuar.", status: 401 },
@@ -50,6 +50,28 @@ const MENSAJES: Record<string, { mensaje: string; status: number }> = {
     mensaje: "Se registraron demasiadas canchas en la última hora. Intenta más tarde.",
     status: 429,
   },
+  // Reservas (paso 5)
+  CANCHA_NO_DISPONIBLE: { mensaje: "Esta cancha no está recibiendo reservas ahora.", status: 409 },
+  HORARIO_OCUPADO: {
+    mensaje: "Alguien acaba de reservar ese horario. Elige otra hora: la grilla ya está actualizada.",
+    status: 409,
+  },
+  HORARIO_PASADO: { mensaje: "Esa hora ya pasó. Elige una hora que todavía no haya empezado.", status: 400 },
+  HORARIO_INVALIDO: { mensaje: "Elige horas seguidas dentro del horario de atención de la cancha.", status: 400 },
+  HORARIO_CERRADO: { mensaje: "La cancha está cerrada en ese horario (mantenimiento o evento).", status: 409 },
+  DURACION_INVALIDA: { mensaje: "Esa cantidad de horas no está permitida en esta cancha.", status: 400 },
+  FECHA_MUY_LEJANA: { mensaje: "Solo se puede reservar hasta 30 días antes.", status: 400 },
+  SIN_TARIFA: {
+    mensaje: "Esta cancha todavía no publicó su precio. Llama al local para reservar.",
+    status: 409,
+  },
+  DEMASIADAS_PENDIENTES: {
+    mensaje: "Ya tienes 2 reservas por pagar. Paga o cancela una antes de apartar otra hora.",
+    status: 429,
+  },
+  RESERVA_NO_ENCONTRADA: { mensaje: "No encontramos esa reserva en tu cuenta.", status: 404 },
+  RESERVA_VENCIDA: { mensaje: "Esta reserva ya venció y el horario se liberó.", status: 409 },
+  NO_SE_PUEDE_CANCELAR: { mensaje: "Esta reserva ya no se puede cancelar.", status: 409 },
   DESCONOCIDO: { mensaje: "Ocurrió un error con la base de datos. Inténtalo de nuevo.", status: 500 },
 };
 
@@ -84,7 +106,7 @@ function traducir(e: { message?: string; code?: string } | null | undefined): Er
 export function aErrorCatalogo(e: unknown): ErrorCatalogo {
   if (e instanceof ErrorCatalogo) return e;
   if (e instanceof Error && e.message in MENSAJES) return crearError(e.message);
-  if (e instanceof Error) return traducir({ message: e.message });
+  if (e instanceof Error) return traducir({ message: e.message, code: (e as { code?: string }).code });
   return crearError("DESCONOCIDO", String(e));
 }
 

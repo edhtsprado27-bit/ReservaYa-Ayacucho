@@ -6,7 +6,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { actualizarSesion } from "@/lib/auth/proxy";
 
-const PRIVADAS = ["/mi-cuenta", "/dueno", "/admin", "/nueva-clave"];
+const PRIVADAS = ["/mi-cuenta", "/dueno", "/admin", "/nueva-clave", "/reservas"];
 
 export async function proxy(request: NextRequest) {
   const { respuesta, hayUsuario } = await actualizarSesion(request);
@@ -25,8 +25,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Todo menos archivos estáticos, imágenes y el catálogo público (/api/canchas),
-    // que no depende de la sesión y así responde más rápido.
-    "/((?!_next/static|_next/image|favicon.ico|api/canchas$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Todo menos archivos estáticos, imágenes y lo público que no depende de la
+    // sesión (catálogo y grilla de horarios): así responden más rápido y el CDN
+    // los puede guardar.
+    "/((?!_next/static|_next/image|favicon.ico|api/canchas$|api/disponibilidad$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

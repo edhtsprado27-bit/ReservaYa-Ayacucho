@@ -20,6 +20,7 @@ export const DISTRITOS: Distrito[] = [
 
 export type Cancha = {
   id: string;
+  slug?: string; // solo las canchas publicadas: abre /cancha/<slug> para reservar
   nombre: string;
   distrito: Distrito;
   direccion: string;

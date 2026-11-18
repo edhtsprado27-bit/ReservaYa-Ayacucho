@@ -41,6 +41,7 @@ function aCancha(c: CanchaBD): Cancha | null {
   if (!DISTRITOS.includes(c.distrito as Distrito)) return null;
   return {
     id: c.id,
+    slug: c.slug,
     nombre: c.nombre,
     distrito: c.distrito as Distrito,
     direccion: c.direccion,
@@ -342,6 +343,9 @@ export default function BuscadorCanchas({ perfil, abrirAgregar = false }: { perf
                     {pendiente && <span className="etiqueta etiqueta--revision">En revisión</span>}
                   </button>
                   <div className="acciones">
+                    {c.slug && !pendiente && (
+                      <Link className="enlace enlace--reservar" href={`/cancha/${c.slug}`}>Reservar</Link>
+                    )}
                     <a className="enlace" href={enlaceGoogleMaps(c)} target="_blank" rel="noopener noreferrer">Cómo llegar</a>
                     {pendiente && (
                       <>
