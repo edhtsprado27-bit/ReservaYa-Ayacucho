@@ -1,0 +1,540 @@
+openapi: 3.0.3
+info:
+  title: ReservaYa Ayacucho · API REST
+  version: 1.0.0
+  description: |
+    API REST del sistema de reservas de canchas sintéticas de la provincia de Huamanga.
+
+    - **Implementación:** Route Handlers de Next.js (`apps/web/src/app/api/**/route.ts`), capa de presentación
+      del monolito modular. Cada ruta llama a un caso de uso de `apps/web/src/modules/*/aplicacion`.
+    - **Autenticación:** sesión de Supabase Auth guardada en cookies (`sb-<proyecto>-auth-token`). El navegador
+      la envía sola después de iniciar sesión. La base de datos valida el rol de quien llama con `auth.uid()`.
+    - **Errores:** todas las rutas responden `{ ok: false, codigo, error }` (las públicas de lectura, sin `ok`).
+      `codigo` es estable; `error` es un mensaje para la persona.
+    - **Anti doble reserva:** aunque dos pedidos lleguen a la vez, PostgreSQL (`EXCLUDE`) deja pasar solo uno;
+      el otro recibe `409 HORARIO_OCUPADO`.
+  license:
+    name: Proyecto académico · Arquitectura de Software
+  contact:
+    name: ReservaYa Ayacucho
+    url: https://github.com/edhtsprado27-bit/ReservaYa-Ayacucho
+servers:
+  - url: https://reservaya-ayacucho.vercel.app
+    description: Producción (Vercel)
+  - url: http://localhost:3000
+    description: Desarrollo local
+tags:
+  - name: Catálogo
+    description: Canchas publicadas, registro y aprobación (módulo catalogo)
+  - name: Reservas
+    description: Grilla de horarios, reservar, mis reservas y cancelar (módulo reservas)
+  - name: Pagos
+    description: Adelanto por Yape/Plin, lectura con IA y revisión del dueño (módulo pagos)
+
+paths:
+  /api/canchas:
+    get:
+      tags: [Catálogo]
+      summary: Canchas publicadas para el mapa
+      description: Público. El CDN guarda la respuesta 60 s y el servidor 30 s en memoria (CatalogoEnCache).
+      operationId: verCatalogo
+      security: []
+      responses:
+        "200":
+          description: Canchas aprobadas
+          headers:
+            Cache-Control:
+              schema: { type: string, example: "public, s-maxage=60, stale-while-revalidate=300" }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [canchas, total, generado]
+                properties:
+                  canchas: { type: array, items: { $ref: "#/components/schemas/Cancha" } }
+                  total: { type: integer, example: 5 }
+                  generado: { type: string, format: date-time }
+        "500": { $ref: "#/components/responses/ErrorLectura" }
+        "502": { $ref: "#/components/responses/ErrorLectura" }
+    post:
+      tags: [Catálogo]
+      summary: Registrar una cancha (queda en revisión)
+      description: Solo cuentas de dueño o administrador.
+      operationId: registrarCancha
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NuevaCancha" }
+      responses:
+        "201":
+          description: Registrada, en revisión
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegistroCancha" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /api/canchas/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: [Catálogo]
+      summary: Corregir una cancha que sigue en revisión
+      description: Solo su dueño o el admin. Devuelve un id nuevo.
+      operationId: corregirCancha
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NuevaCancha" }
+      responses:
+        "200":
+          description: Corregida
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegistroCancha" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [Catálogo]
+      summary: Quitar una cancha que sigue en revisión
+      operationId: quitarCancha
+      security: [{ sesion: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/canchas/mias:
+    get:
+      tags: [Catálogo]
+      summary: Canchas en revisión que puedo ver
+      description: Dueño, las suyas; admin, todas. Sin sesión devuelve una lista vacía.
+      operationId: verPendientes
+      security: [{ sesion: [] }, {}]
+      responses:
+        "200":
+          description: Canchas en revisión
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  canchas: { type: array, items: { $ref: "#/components/schemas/Cancha" } }
+        "502": { $ref: "#/components/responses/ErrorLectura" }
+
+  /api/admin/locales/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Catálogo]
+      summary: Aprobar o rechazar una cancha
+      description: Solo el administrador (lo verifica la base con fn_revisar_local). Al aprobar se renueva la caché del catálogo.
+      operationId: revisarCancha
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion]
+              properties:
+                accion: { type: string, enum: [aprobar, rechazar] }
+                motivo: { type: string, example: "La ubicación no corresponde al local" }
+      responses:
+        "200":
+          description: Revisada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  id: { type: string, format: uuid }
+                  nombre: { type: string }
+                  estado: { type: string, example: approved }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/disponibilidad:
+    get:
+      tags: [Reservas]
+      summary: Grilla de horarios de un local en un día
+      description: Pública, no dice quién reservó. El CDN la guarda 5 s.
+      operationId: verDisponibilidad
+      security: []
+      parameters:
+        - name: local
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: fecha
+          in: query
+          required: true
+          description: Día en hora de Ayacucho (UTC-5)
+          schema: { type: string, format: date, example: "2026-12-01" }
+      responses:
+        "200":
+          description: Turnos del día
+          headers:
+            Cache-Control:
+              schema: { type: string, example: "public, s-maxage=5, stale-while-revalidate=15" }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  turnos: { type: array, items: { $ref: "#/components/schemas/Turno" } }
+                  generado: { type: string, format: date-time }
+        "400": { $ref: "#/components/responses/ErrorLectura" }
+
+  /api/reservas:
+    get:
+      tags: [Reservas]
+      summary: Mis reservas
+      description: Las vigentes primero. Sin sesión devuelve una lista vacía.
+      operationId: verMisReservas
+      security: [{ sesion: [] }, {}]
+      responses:
+        "200":
+          description: Reservas de quien tiene la sesión
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  reservas: { type: array, items: { $ref: "#/components/schemas/Reserva" } }
+    post:
+      tags: [Reservas]
+      summary: Reservar un horario (lo aparta mientras se paga el adelanto)
+      description: |
+        Llama a `fn_reservar`: en una transacción calcula el precio turno por turno, revisa el límite de 2 reservas
+        por pagar y guarda la reserva. La restricción `EXCLUDE` impide cruces. Con la misma `clave` devuelve la misma
+        reserva (idempotencia).
+      operationId: reservarHorario
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PedidoReserva" }
+      responses:
+        "201":
+          description: Reserva apartada (Por pagar)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  reserva: { $ref: "#/components/schemas/ReservaCreada" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "409":
+          description: Horario ocupado, cerrado o cancha sin tarifa
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { ok: false, codigo: HORARIO_OCUPADO, error: "Alguien acaba de reservar ese horario. Elige otra hora: la grilla ya está actualizada." }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /api/reservas/{id}/cancelar:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Reservas]
+      summary: Cancelar una reserva propia
+      operationId: cancelarReserva
+      security: [{ sesion: [] }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                motivo: { type: string, maxLength: 200 }
+      responses:
+        "200":
+          description: Cancelada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  conDevolucion: { type: boolean }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/reservas/{id}/pago:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Pagos]
+      summary: Enviar la captura del adelanto (Yape o Plin)
+      description: |
+        Sube la captura al bucket privado, la IA (OpenRouter) lee monto, n.º de operación, fecha y destinatario,
+        y la base compara con lo esperado. La reserva pasa a "Pago en revisión". La IA nunca confirma el pago.
+      operationId: enviarComprobante
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [imagen, metodo]
+              properties:
+                imagen: { type: string, format: binary, description: "JPG, PNG o WEBP de hasta 3 MB" }
+                metodo: { type: string, enum: [yape, plin] }
+      responses:
+        "201":
+          description: Comprobante recibido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  pago: { type: string, format: uuid }
+                  estadoPago: { type: string, enum: [submitted, ai_verified, ai_flagged] }
+                  resultado: { $ref: "#/components/schemas/ResultadoLectura" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+
+  /api/pagos/{id}/revisar:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Pagos]
+      summary: Confirmar o rechazar un pago (dueño del local o admin)
+      operationId: revisarPago
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion]
+              properties:
+                accion: { type: string, enum: [confirmar, rechazar] }
+                motivo: { type: string, maxLength: 200, description: "Obligatorio al rechazar" }
+      responses:
+        "200":
+          description: Revisado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  estadoReserva: { type: string, example: confirmed }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/locales/{id}/pago:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: [Pagos]
+      summary: Guardar el Yape, Plin y titular de un local
+      operationId: guardarDatosPago
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                yape: { type: string, example: "966123456" }
+                plin: { type: string, example: "966123456" }
+                titular: { type: string, example: "Juan Pérez" }
+      responses:
+        "200":
+          description: Guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  datos:
+                    type: object
+                    properties:
+                      yape: { type: string, nullable: true }
+                      plin: { type: string, nullable: true }
+                      titular: { type: string, nullable: true }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    sesion:
+      type: apiKey
+      in: cookie
+      name: sb-auth-token
+      description: Cookie de sesión de Supabase Auth (su nombre real es sb-<proyecto>-auth-token). El navegador la envía sola.
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Ok:
+      description: Operación correcta
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: { type: boolean, example: true }
+    Error:
+      description: Error con código estable y mensaje para la persona
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ErrorLectura:
+      description: Error en una ruta pública de lectura (sin el campo ok)
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [codigo, error]
+            properties:
+              codigo: { type: string, example: SIN_CONEXION }
+              error: { type: string }
+
+  schemas:
+    Error:
+      type: object
+      required: [ok, codigo, error]
+      properties:
+        ok: { type: boolean, example: false }
+        codigo: { type: string, example: DATOS_INVALIDOS }
+        error: { type: string, example: "Faltan datos de la cancha (nombre, distrito y ubicación)." }
+
+    Cancha:
+      type: object
+      required: [id, slug, nombre, distrito, direccion, lat, lng, deportes, techada]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string, example: cancha-demo }
+        nombre: { type: string, example: "Cancha Demo" }
+        distrito: { type: string, example: "Carmen Alto" }
+        direccion: { type: string }
+        referencia: { type: string }
+        lat: { type: number, example: -13.16 }
+        lng: { type: number, example: -74.22 }
+        deportes: { type: array, items: { type: string, enum: ["Fútbol", "Vóley", "Futsal"] } }
+        techada: { type: boolean }
+        precioDesde: { type: number, example: 50 }
+        telefono: { type: string }
+        rating: { type: number }
+        totalResenas: { type: integer }
+
+    NuevaCancha:
+      type: object
+      required: [nombre, distrito, lat, lng]
+      properties:
+        nombre: { type: string, minLength: 3, maxLength: 120, example: "Complejo El Golazo" }
+        distrito: { type: string, example: "Ayacucho" }
+        lat: { type: number, example: -13.1601 }
+        lng: { type: number, example: -74.2262 }
+        direccion: { type: string }
+        referencia: { type: string }
+        deportes: { type: array, items: { type: string, enum: ["Fútbol", "Vóley", "Futsal"] } }
+        techada: { type: boolean }
+        precioDesde: { type: number, minimum: 1, maximum: 1000, example: 50 }
+        telefono: { type: string }
+
+    RegistroCancha:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        estado: { type: string, example: pending_review }
+
+    Turno:
+      type: object
+      properties:
+        cancha: { type: string, format: uuid }
+        inicio: { type: string, format: date-time }
+        fin: { type: string, format: date-time }
+        estado: { type: string, enum: [libre, ocupado, pasado, cerrado] }
+        precio: { type: number, nullable: true, example: 50 }
+
+    PedidoReserva:
+      type: object
+      required: [canchaId, inicio, fin, clave]
+      properties:
+        canchaId: { type: string, format: uuid }
+        inicio: { type: string, format: date-time, example: "2026-12-01T19:00:00-05:00" }
+        fin: { type: string, format: date-time, example: "2026-12-01T21:00:00-05:00" }
+        clave:
+          type: string
+          pattern: "^[A-Za-z0-9-]{8,64}$"
+          description: Clave de idempotencia, una por intento (evita duplicados por doble clic)
+          example: "7d0b9c1e-4f5a-4b7e-9c2d-1a2b3c4d5e6f"
+
+    EstadoReserva:
+      type: string
+      enum: [pending_payment, payment_review, confirmed, completed, no_show, cancelled, expired]
+
+    ReservaCreada:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        codigo: { type: string, example: RY-4K7P }
+        estado: { $ref: "#/components/schemas/EstadoReserva" }
+        inicio: { type: string, format: date-time }
+        fin: { type: string, format: date-time }
+        total: { type: number, example: 120 }
+        adelanto: { type: number, example: 60 }
+        vence: { type: string, format: date-time, nullable: true, description: "Fin del apartado (15 min por defecto)" }
+
+    Reserva:
+      allOf:
+        - $ref: "#/components/schemas/ReservaCreada"
+        - type: object
+          properties:
+            pagado: { type: number }
+            cancha: { type: string }
+            deporte: { type: string }
+            local: { type: string }
+            slug: { type: string }
+            distrito: { type: string }
+            direccion: { type: string }
+            referencia: { type: string, nullable: true }
+            lat: { type: number, nullable: true }
+            lng: { type: number, nullable: true }
+            telefono: { type: string, nullable: true }
+            horasCancelacion: { type: integer }
+            cancelable: { type: boolean }
+
+    ResultadoLectura:
+      type: string
+      nullable: true
+      description: Comparación de lo que leyó la IA con lo esperado (null si la IA no pudo leer)
+      enum: [match, amount_mismatch, recipient_mismatch, date_out_of_range, duplicate_operation, unreadable, null]
