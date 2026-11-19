@@ -11,8 +11,8 @@ import {
   METODO_TEXTO,
   RESULTADO_CORTO,
   type PagoPorRevisar,
-} from "@/lib/pagos/pagos";
-import { fechaLarga, horaLima, soles } from "@/lib/reservas";
+} from "@/modules/pagos/dominio/pago";
+import { fechaLarga, horaLima, soles } from "@/modules/reservas/dominio/tiempo";
 
 const MOTIVOS = ["No me llegó el pago", "El monto está incompleto", "La captura no es válida"];
 

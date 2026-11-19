@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import BuscadorCanchas from "@/components/BuscadorCanchas";
 import Cabecera from "@/components/Cabecera";
-import { obtenerPerfil } from "@/lib/auth/perfil";
+import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
 
 // Depende de quién inició sesión (para "+ Agregar cancha"): se carga aparte
 async function Buscador({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {

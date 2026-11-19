@@ -3,43 +3,30 @@
 // Solo su dueño o el admin. Las canchas ya aprobadas no se cambian desde aquí.
 
 import { NextResponse } from "next/server";
-import { crearClienteServidor } from "@/lib/auth/servidor";
-import {
-  aErrorCatalogo,
-  reemplazarPropuesta,
-  retirarPropuesta,
-  validarId,
-  validarNuevaCancha,
-} from "@/lib/catalogo-servidor";
+import { corregirCancha, quitarCancha } from "@/modules/catalogo/aplicacion/catalogo.casos-de-uso";
+import { catalogoConSesion } from "@/modules/catalogo/infraestructura/composicion";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { respuestaError, SIN_CACHE } from "@/modules/compartido/presentacion/http";
 
 type Contexto = { params: Promise<{ id: string }> };
-const SIN_CACHE = { "Cache-Control": "no-store" };
-
-function respuestaError(e: unknown) {
-  const err = aErrorCatalogo(e);
-  return NextResponse.json(
-    { ok: false, error: err.message, codigo: err.codigo },
-    { status: err.status, headers: SIN_CACHE },
-  );
-}
 
 export async function PUT(request: Request, { params }: Contexto) {
   try {
-    const id = validarId((await params).id);
+    const { id } = await params;
     const cuerpo = await request.json().catch(() => null);
-    const r = await reemplazarPropuesta(await crearClienteServidor(), id, validarNuevaCancha(cuerpo));
+    const r = await corregirCancha(catalogoConSesion(await crearClienteServidor()), id, cuerpo);
     return NextResponse.json({ ok: true, ...r }, { headers: SIN_CACHE });
   } catch (e) {
-    return respuestaError(e);
+    return respuestaError(e, SIN_CACHE);
   }
 }
 
 export async function DELETE(_request: Request, { params }: Contexto) {
   try {
-    const id = validarId((await params).id);
-    await retirarPropuesta(await crearClienteServidor(), id);
+    const { id } = await params;
+    await quitarCancha(catalogoConSesion(await crearClienteServidor()), id);
     return NextResponse.json({ ok: true }, { headers: SIN_CACHE });
   } catch (e) {
-    return respuestaError(e);
+    return respuestaError(e, SIN_CACHE);
   }
 }

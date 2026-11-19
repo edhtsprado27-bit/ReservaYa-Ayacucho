@@ -3,8 +3,8 @@
 // redirige a la página que corresponde.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { destinoSeguro } from "@/lib/auth/destino";
-import { crearClienteServidor } from "@/lib/auth/servidor";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { destinoSeguro } from "@/modules/cuentas/dominio/destino";
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;

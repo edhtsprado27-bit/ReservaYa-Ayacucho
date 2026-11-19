@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import ListaRevision from "@/components/cuenta/ListaRevision";
-import { obtenerPerfil } from "@/lib/auth/perfil";
-import { crearClienteServidor } from "@/lib/auth/servidor";
-import { listarPendientes } from "@/lib/catalogo-servidor";
+import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { verPendientes } from "@/modules/catalogo/aplicacion/catalogo.casos-de-uso";
+import { catalogoConSesion } from "@/modules/catalogo/infraestructura/composicion";
 
 export const metadata: Metadata = { title: "Administrador · ReservaYa Ayacucho" };
 
@@ -14,7 +15,7 @@ async function Contenido() {
   if (!perfil) redirect("/login?next=/admin");
   if (perfil.rol !== "admin") redirect("/mi-cuenta");
 
-  const pendientes = await listarPendientes(await crearClienteServidor()).catch(() => []);
+  const pendientes = await verPendientes(catalogoConSesion(await crearClienteServidor())).catch(() => []);
   return (
     <section className="panel" aria-labelledby="t-por-aprobar">
       <h2 id="t-por-aprobar">Canchas por aprobar ({pendientes.length})</h2>

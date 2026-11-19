@@ -3,7 +3,7 @@
 // Yape, Plin y titular de cada local: es lo que ve el jugador para pagar el adelanto.
 
 import { useState, type FormEvent } from "react";
-import { celularTexto, type LocalPago } from "@/lib/pagos/pagos";
+import { celularTexto, type LocalPago } from "@/modules/pagos/dominio/pago";
 
 function FormLocal({ local }: { local: LocalPago }) {
   const [yape, setYape] = useState(celularTexto(local.yape));

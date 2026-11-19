@@ -2,12 +2,12 @@
 // Solo el dueño del local o el admin (lo verifica la base con fn_revisar_pago).
 
 import { NextResponse } from "next/server";
-import { crearClienteServidor } from "@/lib/auth/servidor";
-import { aErrorCatalogo } from "@/lib/catalogo-servidor";
-import { revisarPago } from "@/lib/pagos/pagos-servidor";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { respuestaError, SIN_CACHE_PRIVADO } from "@/modules/compartido/presentacion/http";
+import { revisarPago } from "@/modules/pagos/aplicacion/pagos.casos-de-uso";
+import { pagosConSesion } from "@/modules/pagos/infraestructura/composicion";
 
 type Contexto = { params: Promise<{ id: string }> };
-const SIN_CACHE = { "Cache-Control": "private, no-store" };
 
 export async function POST(request: Request, { params }: Contexto) {
   try {
@@ -17,10 +17,10 @@ export async function POST(request: Request, { params }: Contexto) {
       return NextResponse.json({ ok: false, error: "Acción no válida.", codigo: "DATOS_INVALIDOS" }, { status: 400 });
     }
     const motivo = typeof cuerpo.motivo === "string" ? cuerpo.motivo : undefined;
-    const r = await revisarPago(await crearClienteServidor(), id, cuerpo.accion === "confirmar", motivo);
-    return NextResponse.json({ ok: true, ...r }, { headers: SIN_CACHE });
+    const { pagos } = pagosConSesion(await crearClienteServidor());
+    const r = await revisarPago(pagos, id, cuerpo.accion === "confirmar", motivo);
+    return NextResponse.json({ ok: true, ...r }, { headers: SIN_CACHE_PRIVADO });
   } catch (e) {
-    const err = aErrorCatalogo(e);
-    return NextResponse.json({ ok: false, error: err.message, codigo: err.codigo }, { status: err.status, headers: SIN_CACHE });
+    return respuestaError(e);
   }
 }

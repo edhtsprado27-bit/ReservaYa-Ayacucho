@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import LoginEstadio, { type ModoLogin } from "@/components/login/LoginEstadio";
-import { destinoSeguro } from "@/lib/auth/destino";
-import { obtenerPerfil } from "@/lib/auth/perfil";
+import { destinoSeguro } from "@/modules/cuentas/dominio/destino";
+import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
 
 export const metadata: Metadata = { title: "Ingresar · ReservaYa Ayacucho" };
 

@@ -1,7 +1,8 @@
 // Lista de "Mis reservas" (en Mi cuenta). Cada una abre su detalle.
 
 import Link from "next/link";
-import { ESTADO_TEXTO, fechaLarga, horaLima, soles, type Reserva } from "@/lib/reservas";
+import { ESTADO_TEXTO, type Reserva } from "@/modules/reservas/dominio/reserva";
+import { fechaLarga, horaLima, soles } from "@/modules/reservas/dominio/tiempo";
 
 export default function ListaReservas({ reservas }: { reservas: Reserva[] }) {
   return (

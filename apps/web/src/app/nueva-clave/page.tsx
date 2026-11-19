@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import FormNuevaClave from "@/components/cuenta/FormNuevaClave";
-import { obtenerPerfil } from "@/lib/auth/perfil";
+import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
 
 export const metadata: Metadata = { title: "Nueva contraseña · ReservaYa Ayacucho" };
 

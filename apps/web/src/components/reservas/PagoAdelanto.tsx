@@ -6,8 +6,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { celularTexto, METODO_TEXTO, type MetodoPago } from "@/lib/pagos/pagos";
-import { soles } from "@/lib/reservas";
+import { celularTexto, METODO_TEXTO, type MetodoPago } from "@/modules/pagos/dominio/pago";
+import { soles } from "@/modules/reservas/dominio/tiempo";
 
 type Props = {
   reservaId: string;

@@ -9,15 +9,18 @@ import BotonCancelar from "@/components/reservas/BotonCancelar";
 import CuentaRegresiva from "@/components/reservas/CuentaRegresiva";
 import PagoAdelanto from "@/components/reservas/PagoAdelanto";
 import RefrescarCada from "@/components/reservas/RefrescarCada";
-import { enlaceGoogleMaps } from "@/data/canchas";
-import { obtenerPerfil } from "@/lib/auth/perfil";
-import { crearClienteServidor } from "@/lib/auth/servidor";
-import { distritoAWeb } from "@/lib/canchas-db";
-import { aErrorCatalogo } from "@/lib/catalogo-servidor";
-import { ESTADO_TEXTO, duracionTexto, rangoTexto, soles, type Reserva } from "@/lib/reservas";
-import { METODO_TEXTO, resultadoParaJugador, type EstadoPago } from "@/lib/pagos/pagos";
-import { estadoPago } from "@/lib/pagos/pagos-servidor";
-import { misReservas } from "@/lib/reservas-servidor";
+import { distritoAWeb } from "@/modules/catalogo/dominio/cancha";
+import { enlaceGoogleMaps } from "@/modules/catalogo/dominio/ubicacion";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
+import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
+import { verEstadoPago } from "@/modules/pagos/aplicacion/pagos.casos-de-uso";
+import { METODO_TEXTO, resultadoParaJugador, type EstadoPago } from "@/modules/pagos/dominio/pago";
+import { pagosConSesion } from "@/modules/pagos/infraestructura/composicion";
+import { verMisReservas } from "@/modules/reservas/aplicacion/reservas.casos-de-uso";
+import { ESTADO_TEXTO, type Reserva } from "@/modules/reservas/dominio/reserva";
+import { duracionTexto, rangoTexto, soles } from "@/modules/reservas/dominio/tiempo";
+import { reservasConSesion } from "@/modules/reservas/infraestructura/composicion";
 
 export const metadata: Metadata = { title: "Mi reserva · ReservaYa Ayacucho" };
 
@@ -29,9 +32,9 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
   let pago: EstadoPago | null = null;
   try {
     const db = await crearClienteServidor();
-    [[reserva], pago] = await Promise.all([misReservas(db, id), estadoPago(db, id)]);
+    [[reserva], pago] = await Promise.all([verMisReservas(reservasConSesion(db), id), verEstadoPago(pagosConSesion(db).pagos, id)]);
   } catch (e) {
-    return <p className="aviso aviso--error">{aErrorCatalogo(e).message}</p>;
+    return <p className="aviso aviso--error">{aErrorAplicacion(e).message}</p>;
   }
   if (!reserva) {
     return (

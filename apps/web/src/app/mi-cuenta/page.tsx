@@ -5,11 +5,12 @@ import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import BotonSalir from "@/components/cuenta/BotonSalir";
 import ListaReservas from "@/components/reservas/ListaReservas";
-import { obtenerPerfil, ROL_TEXTO } from "@/lib/auth/perfil";
-import { crearClienteServidor } from "@/lib/auth/servidor";
-import { aErrorCatalogo } from "@/lib/catalogo-servidor";
-import type { Reserva } from "@/lib/reservas";
-import { misReservas } from "@/lib/reservas-servidor";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
+import { obtenerPerfil, ROL_TEXTO } from "@/modules/cuentas/infraestructura/perfil";
+import { verMisReservas } from "@/modules/reservas/aplicacion/reservas.casos-de-uso";
+import type { Reserva } from "@/modules/reservas/dominio/reserva";
+import { reservasConSesion } from "@/modules/reservas/infraestructura/composicion";
 
 export const metadata: Metadata = { title: "Mi cuenta · ReservaYa Ayacucho" };
 
@@ -20,9 +21,9 @@ async function Contenido() {
   let reservas: Reserva[] = [];
   let errorReservas: string | null = null;
   try {
-    reservas = await misReservas(await crearClienteServidor());
+    reservas = await verMisReservas(reservasConSesion(await crearClienteServidor()));
   } catch (e) {
-    errorReservas = aErrorCatalogo(e).message;
+    errorReservas = aErrorAplicacion(e).message;
   }
 
   return (

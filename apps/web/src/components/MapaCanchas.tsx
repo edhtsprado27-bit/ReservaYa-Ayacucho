@@ -14,7 +14,7 @@ import {
   enlaceGoogleMaps,
   enlaceWaze,
   type Cancha,
-} from "@/data/canchas";
+} from "@/modules/catalogo/dominio/ubicacion";
 
 // Pin naranja de ReservaYa (dibujado con HTML: evita las imágenes por defecto de Leaflet)
 const pin = (activo: boolean, ejemplo: boolean, revision: boolean) =>

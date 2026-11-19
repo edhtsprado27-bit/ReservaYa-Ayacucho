@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
-import { obtenerPerfil, ROL_TEXTO } from "@/lib/auth/perfil";
+import { obtenerPerfil, ROL_TEXTO } from "@/modules/cuentas/infraestructura/perfil";
 
 async function Cuenta() {
   const perfil = await obtenerPerfil();

@@ -1,14 +1,17 @@
 // GET  /api/canchas  -> canchas publicadas (aprobadas) para el mapa
 // POST /api/canchas  -> registra una cancha nueva; queda "en revisión" (solo dueño o admin)
+// Capa: presentación. Traduce HTTP <-> casos de uso del módulo catálogo.
 
 import { connection, NextResponse } from "next/server";
-import { crearClienteServidor } from "@/lib/auth/servidor";
-import { aErrorCatalogo, leerCatalogo, proponerLocal, validarNuevaCancha } from "@/lib/catalogo-servidor";
+import { registrarCancha, verCatalogo } from "@/modules/catalogo/aplicacion/catalogo.casos-de-uso";
+import { catalogoConSesion, catalogoPublico } from "@/modules/catalogo/infraestructura/composicion";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { respuestaError, SIN_CACHE } from "@/modules/compartido/presentacion/http";
 
 export async function GET() {
   await connection(); // se arma en cada pedido; el CDN cachea la respuesta
   try {
-    const { canchas, generado } = await leerCatalogo();
+    const { canchas, generado } = await verCatalogo(catalogoPublico());
     return NextResponse.json(
       { canchas, total: canchas.length, generado },
       {
@@ -19,30 +22,16 @@ export async function GET() {
       },
     );
   } catch (e) {
-    const err = aErrorCatalogo(e);
-    return NextResponse.json(
-      { error: err.message, codigo: err.codigo },
-      { status: err.status, headers: { "Cache-Control": "no-store" } },
-    );
+    return respuestaError(e, SIN_CACHE, false);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    let cuerpo: unknown;
-    try {
-      cuerpo = await request.json();
-    } catch {
-      cuerpo = null;
-    }
-    const nueva = validarNuevaCancha(cuerpo);
-    const r = await proponerLocal(await crearClienteServidor(), nueva);
-    return NextResponse.json({ ok: true, ...r }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    const cuerpo = await request.json().catch(() => null);
+    const r = await registrarCancha(catalogoConSesion(await crearClienteServidor()), cuerpo);
+    return NextResponse.json({ ok: true, ...r }, { status: 201, headers: SIN_CACHE });
   } catch (e) {
-    const err = aErrorCatalogo(e);
-    return NextResponse.json(
-      { ok: false, error: err.message, codigo: err.codigo },
-      { status: err.status, headers: { "Cache-Control": "no-store" } },
-    );
+    return respuestaError(e, SIN_CACHE);
   }
 }

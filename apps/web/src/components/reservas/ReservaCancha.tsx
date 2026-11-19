@@ -8,18 +8,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  diasParaElegir,
-  esActiva,
-  fechaLarga,
-  horaLima,
-  minutosTexto,
-  nuevaClave,
-  soles,
-  type LocalPublico,
-  type Reserva,
-  type Turno,
-} from "@/lib/reservas";
+import { esActiva, type LocalPublico, type Reserva, type Turno } from "@/modules/reservas/dominio/reserva";
+import { diasParaElegir, fechaLarga, horaLima, minutosTexto, nuevaClave, soles } from "@/modules/reservas/dominio/tiempo";
 
 type Inicial = { fecha?: string; cancha?: string; desde?: string; hasta?: string };
 type Props = { local: LocalPublico; conSesion: boolean; hoy: string; inicial?: Inicial };

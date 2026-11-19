@@ -5,15 +5,16 @@ import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import DatosPago from "@/components/dueno/DatosPago";
 import RevisionPagos from "@/components/dueno/RevisionPagos";
-import { obtenerPerfil } from "@/lib/auth/perfil";
-import { crearClienteServidor } from "@/lib/auth/servidor";
-import { aErrorCatalogo, listarPendientes } from "@/lib/catalogo-servidor";
-import type { LocalPago, PagoPorRevisar } from "@/lib/pagos/pagos";
-import { misLocalesPago, pagosPorRevisar } from "@/lib/pagos/pagos-servidor";
+import { verMisPublicadas, verPendientes } from "@/modules/catalogo/aplicacion/catalogo.casos-de-uso";
+import { catalogoConSesion } from "@/modules/catalogo/infraestructura/composicion";
+import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
+import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
+import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
+import { verMisLocalesPago, verPagosPorRevisar } from "@/modules/pagos/aplicacion/pagos.casos-de-uso";
+import type { LocalPago, PagoPorRevisar } from "@/modules/pagos/dominio/pago";
+import { pagosConSesion } from "@/modules/pagos/infraestructura/composicion";
 
 export const metadata: Metadata = { title: "Panel del dueño · ReservaYa Ayacucho" };
-
-type Publicada = { id: string; name: string; address: string; districts: { name: string } | null };
 
 async function Contenido() {
   const perfil = await obtenerPerfil();
@@ -21,22 +22,18 @@ async function Contenido() {
   if (perfil.rol !== "dueno" && perfil.rol !== "admin") redirect("/mi-cuenta");
 
   const db = await crearClienteServidor();
+  const catalogo = catalogoConSesion(db);
+  const { pagos: repoPagos, almacen } = pagosConSesion(db);
   let errorPagos: string | null = null;
   const anotar = (e: unknown) => {
-    errorPagos ??= aErrorCatalogo(e).message;
+    errorPagos ??= aErrorAplicacion(e).message;
     return [];
   };
   const [pendientes, publicadas, pagos, locales] = await Promise.all([
-    listarPendientes(db).catch(() => []),
-    db
-      .from("venues")
-      .select("id, name, address, districts(name)")
-      .eq("owner_id", perfil.id)
-      .eq("status", "approved")
-      .order("name")
-      .then(({ data }) => (data ?? []) as unknown as Publicada[]),
-    pagosPorRevisar(db).catch(anotar) as Promise<PagoPorRevisar[]>,
-    misLocalesPago(db).catch(anotar) as Promise<LocalPago[]>,
+    verPendientes(catalogo).catch(() => []),
+    verMisPublicadas(catalogo, perfil.id).catch(() => []),
+    verPagosPorRevisar(repoPagos, almacen).catch(anotar) as Promise<PagoPorRevisar[]>,
+    verMisLocalesPago(repoPagos).catch(anotar) as Promise<LocalPago[]>,
   ]);
 
   return (
@@ -66,9 +63,9 @@ async function Contenido() {
           <ul className="lista-simple">
             {publicadas.map((v) => (
               <li key={v.id}>
-                <strong>{v.name}</strong>
+                <strong>{v.nombre}</strong>
                 <span className="meta">
-                  {v.districts?.name} · {v.address}
+                  {v.distrito} · {v.direccion}
                 </span>
               </li>
             ))}

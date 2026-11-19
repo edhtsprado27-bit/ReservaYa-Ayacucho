@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MapaCliente from "./MapaCliente";
+import { CANCHAS } from "@/modules/catalogo/presentacion/canchas-ejemplo";
 import {
-  CANCHAS,
   DISTRITOS,
   PLAZA_DE_ARMAS,
   dentroDeHuamanga,
@@ -12,10 +12,10 @@ import {
   enlaceGoogleMaps,
   type Cancha,
   type Distrito,
-} from "@/data/canchas";
-import type { CanchaBD, NuevaCancha } from "@/lib/canchas-db";
-import { puedeRegistrarCanchas, type Perfil } from "@/lib/auth/roles";
-import { editarPropuesta, proponerCancha, quitarPropuesta, useCanchas } from "@/lib/useCanchas";
+} from "@/modules/catalogo/dominio/ubicacion";
+import type { CanchaBD, NuevaCancha } from "@/modules/catalogo/dominio/cancha";
+import { puedeRegistrarCanchas, type Perfil } from "@/modules/cuentas/dominio/roles";
+import { editarPropuesta, proponerCancha, quitarPropuesta, useCanchas } from "@/modules/catalogo/presentacion/useCanchas";
 
 const normalizar = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 

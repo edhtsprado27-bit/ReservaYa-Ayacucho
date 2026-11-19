@@ -4,14 +4,15 @@
 // Si alguien reserva justo ese horario, la base de datos igual lo impide.
 
 import { connection, NextResponse, type NextRequest } from "next/server";
-import { aErrorCatalogo } from "@/lib/catalogo-servidor";
-import { leerDisponibilidad } from "@/lib/reservas-servidor";
+import { respuestaError, SIN_CACHE } from "@/modules/compartido/presentacion/http";
+import { verDisponibilidad } from "@/modules/reservas/aplicacion/reservas.casos-de-uso";
+import { reservasPublicas } from "@/modules/reservas/infraestructura/composicion";
 
 export async function GET(request: NextRequest) {
   await connection();
   const p = request.nextUrl.searchParams;
   try {
-    const turnos = await leerDisponibilidad(p.get("local") ?? "", p.get("fecha") ?? "");
+    const turnos = await verDisponibilidad(reservasPublicas(), p.get("local") ?? "", p.get("fecha") ?? "");
     return NextResponse.json(
       { turnos, generado: new Date().toISOString() },
       {
@@ -23,10 +24,6 @@ export async function GET(request: NextRequest) {
       },
     );
   } catch (e) {
-    const err = aErrorCatalogo(e);
-    return NextResponse.json(
-      { error: err.message, codigo: err.codigo },
-      { status: err.status, headers: { "Cache-Control": "no-store" } },
-    );
+    return respuestaError(e, SIN_CACHE, false);
   }
 }

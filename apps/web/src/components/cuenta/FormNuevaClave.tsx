@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { clienteNavegador } from "@/lib/auth/cliente";
+import { clienteNavegador } from "@/modules/compartido/infraestructura/supabase/cliente-navegador";
 
 export default function FormNuevaClave() {
   const [clave, setClave] = useState("");

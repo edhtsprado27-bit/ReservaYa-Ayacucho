@@ -4,7 +4,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { CanchaBD } from "@/lib/canchas-db";
+import type { CanchaBD } from "@/modules/catalogo/dominio/cancha";
 
 type Estado = { tipo: "listo" | "error"; texto: string };
 

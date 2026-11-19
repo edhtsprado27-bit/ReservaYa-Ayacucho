@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { clienteNavegador } from "@/lib/auth/cliente";
+import { clienteNavegador } from "@/modules/compartido/infraestructura/supabase/cliente-navegador";
 import type { Estadio } from "./estadio3d";
 import s from "./login.module.css";
 

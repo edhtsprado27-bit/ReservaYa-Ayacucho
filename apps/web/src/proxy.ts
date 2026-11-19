@@ -4,7 +4,7 @@
 //     y después lo regresa a donde quería ir.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { actualizarSesion } from "@/lib/auth/proxy";
+import { actualizarSesion } from "@/modules/compartido/infraestructura/supabase/sesion-proxy";
 
 const PRIVADAS = ["/mi-cuenta", "/dueno", "/admin", "/nueva-clave", "/reservas"];
 

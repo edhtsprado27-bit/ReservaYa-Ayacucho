@@ -6,12 +6,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import ReservaCancha from "@/components/reservas/ReservaCancha";
-import { enlaceGoogleMaps, enlaceWaze } from "@/data/canchas";
-import { obtenerPerfil } from "@/lib/auth/perfil";
-import { distritoAWeb } from "@/lib/canchas-db";
-import { aErrorCatalogo } from "@/lib/catalogo-servidor";
-import { fechaLima, type LocalPublico } from "@/lib/reservas";
-import { leerLocal } from "@/lib/reservas-servidor";
+import { distritoAWeb } from "@/modules/catalogo/dominio/cancha";
+import { enlaceGoogleMaps, enlaceWaze } from "@/modules/catalogo/dominio/ubicacion";
+import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
+import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
+import { verLocal } from "@/modules/reservas/aplicacion/reservas.casos-de-uso";
+import type { LocalPublico } from "@/modules/reservas/dominio/reserva";
+import { fechaLima } from "@/modules/reservas/dominio/tiempo";
+import { reservasPublicas } from "@/modules/reservas/infraestructura/composicion";
 
 export const metadata: Metadata = { title: "Reservar cancha · ReservaYa Ayacucho" };
 
@@ -22,9 +24,9 @@ async function Ficha({ params, searchParams }: PageProps<"/cancha/[slug]">) {
 
   let local: LocalPublico | null;
   try {
-    local = await leerLocal(slug);
+    local = await verLocal(reservasPublicas(), slug);
   } catch (e) {
-    return <p className="aviso aviso--error">{aErrorCatalogo(e).message}</p>;
+    return <p className="aviso aviso--error">{aErrorAplicacion(e).message}</p>;
   }
   if (!local) {
     return (
