@@ -1,0 +1,73 @@
+# Integración continua: en cada push o pull request a main se revisa el código,
+# se ejecutan las pruebas con su cobertura y se compila la aplicación.
+# Si algo falla, GitHub marca el commit con una X roja.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    name: Lint, tipos, pruebas y build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      # Valores de ejemplo: la compilación no se conecta a Supabase
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar el estilo del código (ESLint)
+        run: npm run lint
+
+      - name: Revisar los tipos (TypeScript)
+        run: npm run typecheck
+
+      - name: Pruebas unitarias y de integración con cobertura (Jest)
+        run: npm run test:cobertura -- --ci
+
+      - name: Resumen de cobertura
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            if (!fs.existsSync("coverage/coverage-summary.json")) process.exit(0);
+            const t = require("./coverage/coverage-summary.json").total;
+            const fila = (n, k) => `| ${n} | ${t[k].pct} % | ${t[k].covered} / ${t[k].total} |`;
+            const md = ["## Cobertura de pruebas", "", "| Métrica | % | Cubiertas |", "|---|---|---|",
+              fila("Líneas", "lines"), fila("Sentencias", "statements"), fila("Funciones", "functions"), fila("Ramas", "branches")].join("\n");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + "\n");
+          '
+
+      - name: Guardar el reporte de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-cobertura
+          path: apps/web/coverage/
+          retention-days: 30
+
+      - name: Compilar la aplicación (Next.js)
+        run: npm run build
