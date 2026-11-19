@@ -16,8 +16,8 @@
 | RF10 | El sistema debe notificar por correo la confirmación, el rechazo o la cancelación de una reserva, y enviar un recordatorio antes del partido. |
 | RF11 | El sistema debe mostrar los locales en un mapa y permitir buscar las canchas más cercanas a la ubicación del jugador. |
 | RF12 | El sistema debe permitir abrir la ruta hasta el local en Google Maps o Waze. |
-| RF13 | El sistema debe obtener las coordenadas del local a partir de su dirección o de un punto marcado en el mapa. |
-| RF14 | El sistema debe marcar automáticamente como expiradas las reservas sin comprobante después de 10 minutos. |
+| RF13 | El sistema debe guardar las coordenadas del local a partir del punto que el dueño marca en el mapa. |
+| RF14 | El sistema debe liberar automáticamente el horario de las reservas sin comprobante cuando vence el apartado (15 minutos por defecto, configurable por local). |
 
 ---
 

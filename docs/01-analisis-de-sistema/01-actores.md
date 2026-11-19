@@ -7,6 +7,7 @@
 | **Administrador** | Aprobar canchas nuevas, gestionar usuarios y monitorear las estadísticas de la plataforma. |
 | **Yape / Plin** | Recibir el pago del jugador al dueño de la cancha. |
 | **OpenRouter** | Proveer los modelos de IA para recomendaciones, chat de soporte y lectura de comprobantes. |
-| **Servicio de correo** | Enviar confirmaciones, recordatorios y avisos de reservas. |
-| **Google Maps** | Mostrar los locales en un mapa, convertir la dirección del local en coordenadas y abrir la ruta para llegar. |
+| **Supabase Auth (correo)** | Enviar los correos de la cuenta (registro y cambio de contraseña). Los avisos de reservas por correo quedan para una siguiente iteración. |
+| **OpenStreetMap** | Proveer el mapa (teselas) donde se muestran los locales. |
+| **Google Maps / Waze** | Abrir la ruta hasta el local en el celular del jugador, mediante un enlace. |
 | **Waze** | Abrir la ruta hasta el local desde el celular del jugador. |

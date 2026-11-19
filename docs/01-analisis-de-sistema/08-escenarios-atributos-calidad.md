@@ -32,7 +32,7 @@
 |---|---|
 | **Atributo de calidad** | Disponibilidad |
 | **Fuente** | Jugador |
-| **Estímulo** | El jugador intenta reservar o cuando falla un servicio externo (OpenRouter o el correo). |
+| **Estímulo** | El jugador intenta reservar o pagar cuando falla un servicio externo (por ejemplo, OpenRouter). |
 | **Condición** | El sistema está publicado y cuenta con monitoreo. |
 | **Respuesta esperada** | El sistema permite seguir reservando; si la IA no responde, el comprobante queda pendiente de revisión manual por el dueño. |
 | **Medida** | **Propuesta por validar:** disponibilidad mensual de 99 % para la búsqueda y la reserva. |
