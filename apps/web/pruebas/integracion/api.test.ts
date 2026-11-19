@@ -1,0 +1,260 @@
+// Pruebas de integración de la API REST: se llaman las rutas reales de
+// src/app/api (presentación) que usan los casos de uso (aplicación) y los
+// repositorios (infraestructura). Solo Supabase se reemplaza por uno falso.
+import { crearSupabaseFalso, ID_CANCHA, ID_LOCAL, ID_PAGO, ID_RESERVA, PNG, type RespuestaRpc } from "../apoyo/supabase-falso";
+
+// Fuera de Next.js no existe el contexto del pedido: se simulan connection(), la caché y la sesión
+jest.mock("next/server", () => ({ ...jest.requireActual("next/server"), connection: jest.fn(async () => undefined) }));
+jest.mock("next/cache", () => ({ cacheLife: jest.fn(), cacheTag: jest.fn() }));
+
+let supabase = crearSupabaseFalso();
+jest.mock("@/modules/compartido/infraestructura/supabase/cliente-servidor", () => ({
+  crearClienteServidor: jest.fn(async () => supabase.db),
+}));
+jest.mock("@/modules/compartido/infraestructura/supabase/cliente-publico", () => ({
+  getSupabase: jest.fn(() => supabase.db),
+}));
+
+type Respuestas = Record<string, RespuestaRpc>;
+
+/** Carga las rutas de nuevo (caché del catálogo vacía) con un Supabase que responde lo indicado */
+function preparar(respuestas: Respuestas = {}) {
+  supabase = crearSupabaseFalso(respuestas);
+  let rutas!: ReturnType<typeof cargar>;
+  jest.isolateModules(() => {
+    rutas = cargar();
+  });
+  return rutas;
+}
+function cargar() {
+  return {
+    canchas: require("@/app/api/canchas/route"),
+    canchaId: require("@/app/api/canchas/[id]/route"),
+    mias: require("@/app/api/canchas/mias/route"),
+    admin: require("@/app/api/admin/locales/[id]/route"),
+    disponibilidad: require("@/app/api/disponibilidad/route"),
+    reservas: require("@/app/api/reservas/route"),
+    cancelar: require("@/app/api/reservas/[id]/cancelar/route"),
+    pago: require("@/app/api/reservas/[id]/pago/route"),
+    revisar: require("@/app/api/pagos/[id]/revisar/route"),
+    datosPago: require("@/app/api/locales/[id]/pago/route"),
+    docs: require("@/app/api-docs/route"),
+  };
+}
+
+const json = (url: string, metodo: string, cuerpo?: unknown) =>
+  new Request(`http://localhost${url}`, {
+    method: metodo,
+    headers: { "content-type": "application/json" },
+    body: cuerpo === undefined ? undefined : typeof cuerpo === "string" ? cuerpo : JSON.stringify(cuerpo),
+  });
+const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
+
+const fila = {
+  id: ID_LOCAL, slug: "cancha-demo", nombre: "Cancha Demo", distrito: "Ayacucho", direccion: "Jr. Demo 123", referencia: null,
+  lat: "-13.16", lng: "-74.22", deportes: ["futbol"], techada: false, precio_desde: "50", telefono: null, rating: null, total_resenas: null,
+};
+
+beforeEach(() => jest.spyOn(console, "error").mockImplementation(() => {}));
+
+describe("GET /api/canchas", () => {
+  it("responde las canchas publicadas con caché de CDN", async () => {
+    const { canchas } = preparar({ fn_catalogo_canchas: { data: [fila] } });
+    const res = await canchas.GET();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("public, s-maxage=60, stale-while-revalidate=300");
+    const cuerpo = await res.json();
+    expect(cuerpo.total).toBe(1);
+    expect(cuerpo.canchas[0]).toEqual(expect.objectContaining({ nombre: "Cancha Demo", lat: -13.16, deportes: ["Fútbol"] }));
+  });
+
+  it("varias visitas seguidas usan la caché en memoria (una sola consulta)", async () => {
+    const { canchas } = preparar({ fn_catalogo_canchas: { data: [fila] } });
+    await canchas.GET();
+    await canchas.GET();
+    await canchas.GET();
+    expect(supabase.rpc.mock.calls.filter(([fn]) => fn === "fn_catalogo_canchas")).toHaveLength(1);
+  });
+
+  it("si faltan las migraciones responde 502 con un mensaje claro y sin caché", async () => {
+    const { canchas } = preparar({ fn_catalogo_canchas: { error: { code: "PGRST202", message: "Could not find the function" } } });
+    const res = await canchas.GET();
+    expect(res.status).toBe(502);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(await res.json()).toEqual({ codigo: "FALTA_MIGRACION", error: expect.stringMatching(/migraciones/) });
+  });
+});
+
+describe("catálogo con sesión", () => {
+  it("POST /api/canchas registra y valida", async () => {
+    const { canchas } = preparar({ fn_proponer_local: { data: { id: ID_LOCAL, slug: "nueva", estado: "pending_review" } } });
+    const malo = await canchas.POST(json("/api/canchas", "POST", "esto no es json"));
+    expect(malo.status).toBe(400);
+    expect((await malo.json()).codigo).toBe("DATOS_INVALIDOS");
+
+    const ok = await canchas.POST(json("/api/canchas", "POST", { nombre: "Nueva", distrito: "Ayacucho", lat: -13.16, lng: -74.22 }));
+    expect(ok.status).toBe(201);
+    expect(await ok.json()).toEqual({ ok: true, id: ID_LOCAL, slug: "nueva", estado: "pending_review" });
+  });
+
+  it("solo dueños o admin pueden registrar (403 desde la base)", async () => {
+    const { canchas } = preparar({ fn_proponer_local: { error: { message: "SOLO_DUENOS" } } });
+    const res = await canchas.POST(json("/api/canchas", "POST", { nombre: "Nueva", distrito: "Ayacucho", lat: -13.16, lng: -74.22 }));
+    expect(res.status).toBe(403);
+  });
+
+  it("PUT y DELETE /api/canchas/{id} validan el id", async () => {
+    const { canchaId } = preparar({ fn_reemplazar_propuesta: { data: { id: ID_LOCAL, slug: "x", estado: "pending_review" } } });
+    expect((await canchaId.PUT(json("/api/canchas/x", "PUT", { nombre: "A", distrito: "B", lat: 1, lng: 2 }), ctx("x"))).status).toBe(404);
+    expect((await canchaId.PUT(json(`/api/canchas/${ID_LOCAL}`, "PUT", { nombre: "A", distrito: "B", lat: 1, lng: 2 }), ctx(ID_LOCAL))).status).toBe(200);
+    expect((await canchaId.DELETE(json("/api/canchas/x", "DELETE"), ctx("x"))).status).toBe(404);
+    expect((await canchaId.DELETE(json(`/api/canchas/${ID_LOCAL}`, "DELETE"), ctx(ID_LOCAL))).status).toBe(200);
+  });
+
+  it("GET /api/canchas/mias sin sesión devuelve una lista vacía", async () => {
+    const { mias } = preparar({ fn_mis_pendientes: { data: [fila] } });
+    supabase.getUser.mockResolvedValueOnce({ data: { user: null } } as never);
+    expect(await (await mias.GET()).json()).toEqual({ canchas: [] });
+    const conSesion = await mias.GET();
+    expect((await conSesion.json()).canchas).toHaveLength(1);
+    expect(conSesion.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("al aprobar una cancha el catálogo público se renueva al instante", async () => {
+    const { canchas, admin } = preparar({
+      fn_catalogo_canchas: { data: [fila] },
+      fn_revisar_local: { data: { id: ID_LOCAL, nombre: "Cancha Demo", estado: "approved" } },
+    });
+    await canchas.GET();
+    expect((await admin.POST(json(`/api/admin/locales/${ID_LOCAL}`, "POST", { accion: "borrar" }), ctx(ID_LOCAL))).status).toBe(400);
+    const r = await admin.POST(json(`/api/admin/locales/${ID_LOCAL}`, "POST", { accion: "aprobar" }), ctx(ID_LOCAL));
+    expect(r.status).toBe(200);
+    await canchas.GET();
+    expect(supabase.rpc.mock.calls.filter(([fn]) => fn === "fn_catalogo_canchas")).toHaveLength(2);
+  });
+});
+
+describe("GET /api/disponibilidad", () => {
+  it("valida los parámetros", async () => {
+    const { disponibilidad } = preparar();
+    const { NextRequest } = jest.requireActual("next/server");
+    const res = await disponibilidad.GET(new NextRequest(`http://localhost/api/disponibilidad?local=x&fecha=ayer`));
+    expect(res.status).toBe(400);
+    expect((await res.json()).codigo).toBe("DATOS_INVALIDOS_RESERVA");
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("devuelve la grilla con 5 s de caché en el CDN", async () => {
+    const { disponibilidad } = preparar({
+      fn_disponibilidad_local: { data: [{ cancha_id: ID_CANCHA, inicio: "2026-12-01T19:00:00-05:00", fin: "2026-12-01T20:00:00-05:00", estado: "libre", precio: "50" }] },
+    });
+    const { NextRequest } = jest.requireActual("next/server");
+    const res = await disponibilidad.GET(new NextRequest(`http://localhost/api/disponibilidad?local=${ID_LOCAL}&fecha=2026-12-01`));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("public, s-maxage=5, stale-while-revalidate=15");
+    expect((await res.json()).turnos[0]).toEqual(expect.objectContaining({ estado: "libre", precio: 50 }));
+  });
+});
+
+describe("reservas", () => {
+  const pedido = { canchaId: ID_CANCHA, inicio: "2026-12-01T19:00:00-05:00", fin: "2026-12-01T21:00:00-05:00", clave: "clave-de-prueba-123" };
+
+  it("POST /api/reservas aparta el horario (201)", async () => {
+    const { reservas } = preparar({
+      fn_reservar: { data: { id: ID_RESERVA, codigo: "RY-ABCD", estado: "pending_payment", inicio: "a", fin: "b", total: 100, adelanto: 50, vence: "v" } },
+    });
+    const res = await reservas.POST(json("/api/reservas", "POST", pedido));
+    expect(res.status).toBe(201);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect((await res.json()).reserva.codigo).toBe("RY-ABCD");
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_reservar", expect.objectContaining({ p_clave: "clave-de-prueba-123", p_inicio: "2026-12-02T00:00:00.000Z" }));
+  });
+
+  it.each([
+    ["HORARIO_OCUPADO", 409, "HORARIO_OCUPADO"],
+    ["BOOKING_IN_PAST", 400, "HORARIO_PASADO"],
+    ["DEMASIADAS_PENDIENTES", 429, "DEMASIADAS_PENDIENTES"],
+  ])("si la base responde %s -> %i %s", async (mensaje, status, codigo) => {
+    const { reservas } = preparar({ fn_reservar: { error: { message: mensaje } } });
+    const res = await reservas.POST(json("/api/reservas", "POST", pedido));
+    expect(res.status).toBe(status);
+    expect(await res.json()).toEqual({ ok: false, codigo, error: expect.any(String) });
+  });
+
+  it("un pedido inválido no llega a la base (400)", async () => {
+    const { reservas } = preparar();
+    expect((await reservas.POST(json("/api/reservas", "POST", { canchaId: "x" }))).status).toBe(400);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("GET /api/reservas sin sesión devuelve una lista vacía", async () => {
+    const { reservas } = preparar({ fn_mis_reservas: { error: { code: "42501", message: "permission denied" } } });
+    const res = await reservas.GET();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, reservas: [] });
+  });
+
+  it("POST /api/reservas/{id}/cancelar", async () => {
+    const { cancelar } = preparar({ fn_cancelar_reserva: { data: { con_devolucion: false } } });
+    const res = await cancelar.POST(json(`/api/reservas/${ID_RESERVA}/cancelar`, "POST", { motivo: "No puedo ir" }), ctx(ID_RESERVA));
+    expect(await res.json()).toEqual({ ok: true, conDevolucion: false });
+    expect((await cancelar.POST(json("/api/reservas/x/cancelar", "POST"), ctx("x"))).status).toBe(400);
+  });
+});
+
+describe("pagos", () => {
+  const formulario = (metodo: string, datos: Uint8Array = PNG) => {
+    const f = new FormData();
+    f.set("metodo", metodo);
+    f.set("imagen", new Blob([new Uint8Array(datos)], { type: "image/png" }), "captura.png");
+    return new Request(`http://localhost/api/reservas/${ID_RESERVA}/pago`, { method: "POST", body: f });
+  };
+
+  it("POST /api/reservas/{id}/pago sube la captura y registra el pago (sin IA configurada)", async () => {
+    delete process.env.OPENROUTER_API_KEY;
+    const { pago } = preparar({
+      fn_estado_pago: { data: { estado: "pending_payment", adelanto: 50, titular: "Juan", pago: null } },
+      fn_registrar_pago: { data: { pago: ID_PAGO, estado_pago: "submitted", resultado: null } },
+    });
+    const res = await pago.POST(formulario("yape"), ctx(ID_RESERVA));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true, pago: ID_PAGO, estadoPago: "submitted", resultado: null });
+    expect(supabase.upload).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^${ID_RESERVA}/[0-9a-f]{64}\\.png$`)), expect.any(Uint8Array), {
+      contentType: "image/png",
+      upsert: false,
+    });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_registrar_pago", expect.objectContaining({ p_metodo: "yape", p_lectura: null }));
+  });
+
+  it("rechaza un método inválido o un archivo que no es imagen", async () => {
+    const { pago } = preparar({ fn_estado_pago: { data: { estado: "pending_payment", adelanto: 50, pago: null } } });
+    expect((await pago.POST(formulario("bitcoin"), ctx(ID_RESERVA))).status).toBe(400);
+    const res = await pago.POST(formulario("plin", new TextEncoder().encode("hola")), ctx(ID_RESERVA));
+    expect((await res.json()).codigo).toBe("IMAGEN_INVALIDA");
+  });
+
+  it("POST /api/pagos/{id}/revisar", async () => {
+    const { revisar } = preparar({ fn_revisar_pago: { data: { estado_reserva: "confirmed" } } });
+    expect((await revisar.POST(json(`/api/pagos/${ID_PAGO}/revisar`, "POST", { accion: "otra" }), ctx(ID_PAGO))).status).toBe(400);
+    const res = await revisar.POST(json(`/api/pagos/${ID_PAGO}/revisar`, "POST", { accion: "confirmar" }), ctx(ID_PAGO));
+    expect(await res.json()).toEqual({ ok: true, estadoReserva: "confirmed" });
+  });
+
+  it("PUT /api/locales/{id}/pago", async () => {
+    const { datosPago } = preparar({ fn_guardar_datos_pago: { data: { yape: "966123456", plin: null, titular: "Juan" } } });
+    const res = await datosPago.PUT(json(`/api/locales/${ID_LOCAL}/pago`, "PUT", { yape: "966123456", titular: "Juan" }), ctx(ID_LOCAL));
+    expect(await res.json()).toEqual({ ok: true, datos: { yape: "966123456", plin: null, titular: "Juan" } });
+  });
+});
+
+describe("GET /api-docs", () => {
+  it("sirve la página de Swagger UI que lee /openapi.yaml", async () => {
+    const { docs } = preparar();
+    const res = docs.GET();
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    const html = await res.text();
+    expect(html).toContain("SwaggerUIBundle");
+    expect(html).toContain("/swagger-ui/swagger-ui-bundle.js");
+    expect(html).toContain('url: "/openapi.yaml"');
+  });
+});

@@ -18,3 +18,7 @@ Cada módulo tiene las mismas capas:
 Las páginas y la API REST (`src/app/`) son la capa de presentación: llaman a los casos de uso y nunca escriben SQL.
 
 Más detalle: `docs/03-diseño-de-software/diseño-interno/diseño-interno-de-modulos.md`.
+
+## Pruebas
+
+Las pruebas están en `apps/web/pruebas/` y siguen las mismas capas (ver `docs/06-pruebas-y-calidad/01-pruebas-automatizadas.md`). Se ejecutan con `npm test` y la cobertura con `npm run test:cobertura`.
