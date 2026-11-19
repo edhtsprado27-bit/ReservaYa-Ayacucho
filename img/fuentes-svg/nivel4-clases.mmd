@@ -1,109 +1,76 @@
 classDiagram
     direction TB
 
-    class ReservaController {
-        -crearReserva: CrearReservaUseCase
-        +crear(dto, req) Respuesta
+    class ReservasRepositorio {
+        <<interface>>
+        +leerLocal(slug) LocalPublico
+        +disponibilidad(localId, fecha) Turno[]
+        +reservar(pedido) ReservaCreada
+        +misReservas(id?) Reserva[]
+        +cancelar(id, motivo?) object
     }
-    class CrearReservaUseCase {
-        -reservas: ReservaRepository
-        -bloqueo: BloqueoHorarioPort
-        -tarifas: TarifaPort
-        +ejecutar(cmd) Reserva
+    class SupabaseReservasRepositorio {
+        -db: SupabaseClient
     }
-    class MarcarEnVerificacionUseCase {
-        +ejecutar(reservaId) void
+    class ReservasCasosDeUso {
+        <<aplicacion>>
+        +reservarHorario(repo, datos)
+        +cancelarReserva(repo, id, motivo?)
+        +verMisReservas(repo, id?)
     }
-    class Reserva {
-        +id: string
-        +jugadorId: string
+    class PedidoReserva {
         +canchaId: string
-        -estado: EstadoReserva
-        +expiraEn: Date
-        +crear(jugadorId, canchaId, franja, precio)$ Reserva
-        +total() number
-        +registrarComprobante() void
-        +cancelar() void
+        +inicio: string
+        +fin: string
+        +clave: string
     }
-    class FranjaHoraria {
-        +fecha: string
-        +horaInicio: number
-        +horaFin: number
-        +horas() number[]
-    }
-    class EstadoReserva {
-        <<enumeration>>
-        PENDIENTE_PAGO
-        EN_VERIFICACION
-        CONFIRMADA
-        RECHAZADA
-        CANCELADA
-        EXPIRADA
-    }
-    class ReservaRepository {
-        <<interface>>
-        +guardar(reserva) void
-        +buscarPorId(id) Reserva
-    }
-    class BloqueoHorarioPort {
-        <<interface>>
-        +bloquear(canchaId, franja, ms) boolean
-        +liberar(canchaId, franja) void
-    }
-    class TarifaPort {
-        <<interface>>
-        +precioPorHora(canchaId, franja) number
-    }
-    class PostgresReservaRepository
-    class RedisBloqueoHorarioAdapter
-    class HorariosTarifaAdapter
 
-    class PagoController {
-        +subirComprobante(id, archivo)
-        +validar(id, decision)
+    class enviarComprobante {
+        <<caso de uso>>
+        +enviarComprobante(deps, reservaId, metodo, imagen) PagoEnviado
     }
-    class RegistrarComprobanteUseCase {
-        -storage: ComprobanteStoragePort
-        -verificador: VerificadorComprobantePort
-        +ejecutar(reservaId, imagen) ResultadoVerificacion
+    class PagosCasosDeUso {
+        <<aplicacion>>
+        +revisarPago(pagos, id, aprobar, motivo?)
+        +verPagosPorRevisar(pagos, almacen)
     }
-    class ValidarPagoUseCase {
-        +ejecutar(pagoId, aprobado) void
-    }
-    class ComprobanteStoragePort {
+    class PagosRepositorio {
         <<interface>>
-        +guardar(imagen) string
+        +estadoPago(reservaId) EstadoPago
+        +configIA() ConfigIA
+        +registrarPago(nuevo) PagoEnviado
+        +revisarPago(id, aprobar, motivo?)
     }
-    class VerificadorComprobantePort {
+    class AlmacenComprobantes {
         <<interface>>
-        +verificar(urlImagen, montoEsperado) ResultadoVerificacion
+        +subir(ruta, imagen, mime) ResultadoSubida
+        +enlacesFirmados(rutas, segundos) Map
     }
-    class ResultadoVerificacion {
-        <<DTO>>
-        +coincide: boolean
-        +monto: number
-        +numeroOperacion: string
-        +motivo: string
+    class LectorComprobantes {
+        <<interface>>
+        +leer(imagen, mime, config) ResultadoOCR
     }
-    class SupabaseStorageAdapter
-    class IaComprobanteAdapter
+    class SupabasePagosRepositorio
+    class SupabaseAlmacenComprobantes
+    class OpenRouterLectorComprobantes
+    class ReglasVerificacion {
+        <<dominio>>
+        +destinatarioCoincide(leido, titular)
+        +montoLimpio(m)
+        +validarLectura(x)
+        +tipoDeImagen(bytes)
+    }
 
-    ReservaController --> CrearReservaUseCase
-    CrearReservaUseCase --> ReservaRepository
-    CrearReservaUseCase --> BloqueoHorarioPort
-    CrearReservaUseCase --> TarifaPort
-    CrearReservaUseCase ..> Reserva : «crea»
-    Reserva *-- FranjaHoraria
-    Reserva --> EstadoReserva
-    PostgresReservaRepository ..|> ReservaRepository
-    RedisBloqueoHorarioAdapter ..|> BloqueoHorarioPort
-    HorariosTarifaAdapter ..|> TarifaPort
+    ReservasCasosDeUso --> ReservasRepositorio
+    ReservasCasosDeUso ..> PedidoReserva : «valida»
+    SupabaseReservasRepositorio ..|> ReservasRepositorio
 
-    PagoController --> RegistrarComprobanteUseCase
-    PagoController --> ValidarPagoUseCase
-    RegistrarComprobanteUseCase --> ComprobanteStoragePort
-    RegistrarComprobanteUseCase --> VerificadorComprobantePort
-    RegistrarComprobanteUseCase --> MarcarEnVerificacionUseCase : API pública de Reservas
-    VerificadorComprobantePort ..> ResultadoVerificacion
-    SupabaseStorageAdapter ..|> ComprobanteStoragePort
-    IaComprobanteAdapter ..|> VerificadorComprobantePort
+    enviarComprobante --> PagosRepositorio
+    enviarComprobante --> AlmacenComprobantes
+    enviarComprobante --> LectorComprobantes
+    enviarComprobante ..> ReglasVerificacion
+    PagosCasosDeUso --> PagosRepositorio
+    PagosCasosDeUso --> AlmacenComprobantes
+    SupabasePagosRepositorio ..|> PagosRepositorio
+    SupabaseAlmacenComprobantes ..|> AlmacenComprobantes
+    OpenRouterLectorComprobantes ..|> LectorComprobantes

@@ -1,34 +1,32 @@
 sequenceDiagram
     autonumber
-    actor J as Jugador web
-    participant RC as ReservaController
-    participant UC as CrearReservaUseCase
-    participant BL as BloqueoHorarioPort (Redis)
-    participant TA as TarifaPort
-    participant RS as Reserva
-    participant RR as ReservaRepository (PostgreSQL)
-    participant PG as RegistrarComprobanteUseCase
-    participant IA as IaComprobanteAdapter (OpenRouter)
-    actor D as Dueño de cancha
+    actor J as Jugador
+    participant RR as POST /api/reservas
+    participant RS as SupabaseReservasRepositorio
+    participant RP as POST /api/reservas/{id}/pago
+    participant EC as enviarComprobante
+    participant AL as AlmacenComprobantes (Storage)
+    participant IA as LectorComprobantes (OpenRouter)
+    participant DB as PostgreSQL
+    actor D as Dueño
 
-    J->>RC: POST /api/v1/reservas (cancha, fecha, horario, JWT)
-    RC->>UC: ejecutar(cmd)
-    UC->>BL: bloquear(cancha, franja, 10 min)
+    J->>RR: cancha, inicio, fin, clave
+    RR->>RS: reservarHorario → reservar(pedido)
+    RS->>DB: fn_reservar (EXCLUDE, precio, límite)
     alt Horario libre
-        BL-->>UC: true
-        UC->>TA: precioPorHora(cancha, franja)
-        TA-->>UC: precio (pico o normal)
-        UC->>RS: crear(...) → PENDIENTE_PAGO, total()
-        UC->>RR: guardar(reserva)
-        RC-->>J: 201 Created (código, monto, Yape/Plin del dueño)
-        J->>PG: POST /reservas/:id/comprobante (captura)
-        PG->>IA: verificar(imagen, monto)
-        IA-->>PG: ResultadoVerificacion
-        PG-->>J: Reserva EN_VERIFICACION
-        D->>PG: Confirma el pago (ValidarPagoUseCase)
-        PG-->>J: Reserva CONFIRMADA + notificación
-    else Horario ocupado
-        BL-->>UC: false
-        RC-->>J: 409 Conflict
+        DB-->>RR: reserva Por pagar (apartada 15 min)
+        RR-->>J: 201 Created
+        J->>RP: captura de Yape/Plin
+        RP->>EC: enviarComprobante(deps, id, metodo, imagen)
+        EC->>DB: fn_estado_pago (¿sigue por pagar?)
+        EC->>AL: subir(ruta con huella SHA-256)
+        EC->>IA: leer(imagen) → monto, operación, fecha, destinatario
+        EC->>DB: fn_registrar_pago (compara y deja en revisión)
+        RP-->>J: 201 · Pago en revisión
+        D->>DB: POST /api/pagos/{id}/revisar → fn_revisar_pago
+        DB-->>J: Reserva Confirmada
+    else Horario tomado
+        DB-->>RR: HORARIO_OCUPADO
+        RR-->>J: 409 Conflict
     end
-    Note over BL,RR: Sin comprobante en 10 min → el bloqueo vence y la reserva pasa a EXPIRADA
+    Note over IA,DB: Si la IA falla, el pago queda para revisión manual

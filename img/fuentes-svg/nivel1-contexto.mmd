@@ -1,28 +1,26 @@
 flowchart TB
     jugador["<b>Jugador</b><br/>[Persona]<br/>Busca canchas, reserva<br/>y sube su comprobante"]
-    dueno["<b>Dueño de cancha</b><br/>[Persona]<br/>Gestiona canchas, horarios<br/>y tarifas; valida pagos"]
+    dueno["<b>Dueño de cancha</b><br/>[Persona]<br/>Registra canchas<br/>y revisa los pagos"]
     admin["<b>Administrador</b><br/>[Persona]<br/>Aprueba canchas y<br/>gestiona usuarios"]
 
-    sistema["<b>ReservaYa Ayacucho</b><br/>[Sistema de software]<br/>Búsqueda de canchas por distrito, disponibilidad<br/>en tiempo real, reservas y validación de pagos"]
+    sistema["<b>ReservaYa Ayacucho</b><br/>[Sistema de software]<br/>Mapa de canchas de Huamanga, grilla de horarios,<br/>reservas sin cruces y pago del adelanto"]
 
     yape["<b>Yape / Plin</b><br/>[Sistema externo]<br/>Billeteras digitales"]
     openrouter["<b>OpenRouter</b><br/>[Sistema externo]<br/>Modelos de IA"]
-    correo["<b>Servicio de correo</b><br/>[Sistema externo]<br/>Envío de notificaciones"]
-    maps["<b>Google Maps</b><br/>[Sistema externo]<br/>Mapa, coordenadas y rutas"]
-    waze["<b>Waze</b><br/>[Sistema externo]<br/>Rutas en el celular"]
+    osm["<b>OpenStreetMap</b><br/>[Sistema externo]<br/>Teselas del mapa"]
+    rutas["<b>Google Maps / Waze</b><br/>[Sistema externo]<br/>Rutas en el celular"]
 
     jugador -- "Busca, reserva y<br/>sube comprobante" --> sistema
-    dueno -- "Gestiona canchas<br/>y valida pagos" --> sistema
-    admin -- "Aprueba canchas<br/>y gestiona usuarios" --> sistema
-    jugador -. "Paga la reserva" .-> yape
-    sistema -- "Recomendaciones, chat y<br/>lectura de comprobantes<br/>[HTTPS/REST]" --> openrouter
-    sistema -- "Envía notificaciones<br/>[HTTPS/REST]" --> correo
-    sistema -- "Mapa y coordenadas<br/>[HTTPS/REST]" --> maps
-    jugador -. "Abre la ruta<br/>(enlace)" .-> waze
+    dueno -- "Registra canchas<br/>y revisa pagos" --> sistema
+    admin -- "Aprueba canchas" --> sistema
+    jugador -. "Paga el adelanto" .-> yape
+    sistema -- "Lectura del comprobante<br/>[HTTPS/REST]" --> openrouter
+    sistema -- "Mapa<br/>[HTTPS]" --> osm
+    jugador -. "Cómo llegar<br/>(enlace)" .-> rutas
 
     classDef persona fill:#08427b,stroke:#052e56,color:#fff
     classDef interno fill:#1168bd,stroke:#0b4884,color:#fff
     classDef externo fill:#999999,stroke:#6b6b6b,color:#fff
     class jugador,dueno,admin persona
     class sistema interno
-    class yape,openrouter,correo,maps,waze externo
+    class yape,openrouter,osm,rutas externo

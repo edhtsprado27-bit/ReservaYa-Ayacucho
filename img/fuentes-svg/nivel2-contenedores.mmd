@@ -2,33 +2,31 @@ flowchart TB
     usuarios["<b>Jugador · Dueño de cancha · Administrador</b><br/>[Personas]"]
 
     subgraph limite["ReservaYa Ayacucho [Sistema]"]
-        web["<b>Aplicación web</b><br/>[Next.js · Vercel]<br/>Interfaz para jugadores,<br/>dueños y administrador"]
-        api["<b>API ReservaYa</b><br/>[Node.js + NestJS · Render]<br/>API REST, reglas de negocio,<br/>tareas programadas<br/>Monolito modular"]
-        bd[("<b>Base de datos</b><br/>[PostgreSQL + PostGIS · Supabase]<br/>Usuarios, locales con ubicación,<br/>canchas, reservas y pagos")]
-        cache[("<b>Caché y bloqueos</b><br/>[Redis · Upstash]<br/>Bloqueo de horarios y<br/>disponibilidad en memoria")]
-        storage[("<b>Almacenamiento de archivos</b><br/>[Supabase Storage]<br/>Comprobantes y fotos")]
+        web["<b>Aplicación web</b><br/>[Next.js 16 · navegador]<br/>Mapa, grilla de horarios,<br/>paneles del dueño y admin"]
+        srv["<b>Servidor de la aplicación</b><br/>[Next.js 16 en Vercel]<br/>Páginas + API REST /api<br/>Monolito modular"]
+        cdn["<b>CDN</b><br/>[Vercel]<br/>Catálogo 60 s · grilla 5 s"]
+        bd[("<b>Base de datos</b><br/>[PostgreSQL · Supabase]<br/>Funciones fn_*, RLS,<br/>EXCLUDE anti doble reserva")]
+        auth[("<b>Autenticación</b><br/>[Supabase Auth]<br/>Cuentas y sesiones")]
+        storage[("<b>Almacenamiento</b><br/>[Supabase Storage]<br/>Capturas (bucket privado)")]
     end
 
     openrouter["<b>OpenRouter</b><br/>[Sistema externo]<br/>Modelos de IA"]
-    correo["<b>Servicio de correo</b><br/>[Sistema externo]"]
-    maps["<b>Google Maps</b><br/>[Sistema externo]<br/>Mapa y geocodificación"]
-    waze["<b>Waze</b><br/>[Sistema externo]"]
+    osm["<b>OpenStreetMap</b><br/>[Sistema externo]"]
 
     usuarios -- "Usa [HTTPS]" --> web
-    web -- "Llama a la API<br/>[HTTPS/JSON]" --> api
-    api -- "Lee y escribe<br/>[SQL/TCP]" --> bd
-    api -- "Bloquea horarios<br/>[TCP]" --> cache
-    api -- "Sube comprobantes<br/>[HTTPS/REST]" --> storage
-    api -- "IA [HTTPS/REST]" --> openrouter
-    api -- "Notifica [HTTPS/REST]" --> correo
-    api -- "Geocodifica [HTTPS/REST]" --> maps
-    web -- "Carga el mapa [HTTPS]" --> maps
-    web -. "Enlace «Cómo llegar»" .-> waze
+    web -- "Páginas y API<br/>[HTTPS/JSON]" --> cdn
+    cdn --> srv
+    web -- "Inicia sesión [HTTPS]" --> auth
+    web -- "Teselas [HTTPS]" --> osm
+    srv -- "Funciones fn_*<br/>[HTTPS · PostgREST]" --> bd
+    srv -- "Sesión" --> auth
+    srv -- "Sube capturas<br/>[HTTPS]" --> storage
+    srv -- "Lee comprobantes<br/>[HTTPS/REST]" --> openrouter
 
     classDef persona fill:#08427b,stroke:#052e56,color:#fff
     classDef contenedor fill:#438dd5,stroke:#2e6295,color:#fff
     classDef externo fill:#999999,stroke:#6b6b6b,color:#fff
     class usuarios persona
-    class web,api,bd,cache,storage contenedor
-    class openrouter,correo,maps,waze externo
+    class web,srv,cdn,bd,auth,storage contenedor
+    class openrouter,osm externo
     style limite fill:none,stroke:#444,stroke-dasharray:6 4

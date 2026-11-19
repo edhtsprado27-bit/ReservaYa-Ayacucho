@@ -1,7 +1,7 @@
 # Nivel 2 · Diagrama de contenedores
 
 > **Proyecto:** ReservaYa Ayacucho  
-> **Modelo:** C4 · Nivel 2 de 4 · **Versión:** 1.0
+> **Modelo:** C4 · Nivel 2 de 4 · **Versión:** 2.0 (Sprint 2: alineado con el sistema implementado)
 
 ---
 
@@ -31,11 +31,13 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 
 | Contenedor | Tecnología | Responsabilidad | Datos que maneja |
 |---|---|---|---|
-| **Aplicación web** | Next.js (React) · desplegada en Vercel | Interfaz para jugadores (buscar, reservar, subir comprobante), panel del dueño de cancha y panel de administración | Ninguno persistente; solo el estado de la pantalla |
-| **API ReservaYa** | Node.js + NestJS · desplegada en Render | Expone la API REST, aplica las reglas de negocio, integra los sistemas externos y ejecuta las tareas programadas (expirar reservas sin pago, recordatorios). Es un **monolito modular**: un solo proceso con módulos internos | Ninguno propio; usa la base de datos, la caché y el almacenamiento |
-| **Base de datos** | PostgreSQL + PostGIS (Supabase) | Almacena de forma permanente la información del negocio y calcula la cercanía de los locales | Usuarios, locales con su ubicación, canchas, horarios, tarifas, reservas, pagos y uso de IA |
-| **Caché y bloqueos** | Redis (Upstash) | Bloquea temporalmente un horario mientras el jugador reserva y guarda en memoria la disponibilidad más consultada | Bloqueos temporales y copia de la disponibilidad |
-| **Almacenamiento de archivos** | Supabase Storage | Guarda las imágenes de los comprobantes de Yape/Plin y las fotos de las canchas | Imágenes |
+| **Aplicación web** | Next.js 16 (React) · se ejecuta en el navegador | Interfaz para jugadores (mapa, grilla de horarios, subir comprobante), panel del dueño y panel del administrador | Ninguno persistente; solo el estado de la pantalla |
+| **Servidor de la aplicación (web + API REST)** | Next.js 16 en Vercel (funciones en São Paulo) | Renderiza las páginas, expone la API REST (`/api/...`) y ejecuta los módulos del **monolito modular** (catálogo, reservas, pagos, cuentas) | Ninguno propio; caché en memoria del catálogo (30 s) |
+| **Base de datos** | PostgreSQL en Supabase | Guarda la información y aplica las reglas críticas en funciones `SECURITY DEFINER` (reservar, registrar pago), con RLS y la restricción `EXCLUDE` anti doble reserva | Usuarios, distritos, locales, canchas, tarifas, horarios, reservas, pagos y uso de IA |
+| **Autenticación** | Supabase Auth | Registro, inicio de sesión y sesión en cookies; la base sabe quién llama con `auth.uid()` | Cuentas y sesiones |
+| **Almacenamiento de archivos** | Supabase Storage (bucket privado `comprobantes`) | Guarda las capturas de Yape/Plin; solo las ven el jugador, el dueño y el admin (enlaces firmados de 15 min) | Imágenes |
+| **CDN** | Red de Vercel (dominio propio con Cloudflare en el Sprint 2) | Guarda copias de las respuestas públicas (catálogo 60 s, grilla 5 s) y los archivos estáticos | Copias temporales |
+| **Caché compartida** *(Sprint 2)* | Redis en Upstash | Compartir la caché del catálogo y la disponibilidad entre instancias del servidor | Copias temporales |
 
 ---
 
@@ -44,15 +46,12 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 | Origen | Destino | Descripción | Protocolo |
 |---|---|---|---|
 | Jugador, Dueño de cancha, Administrador | Aplicación web | Usan la aplicación desde el navegador o el celular | HTTPS |
-| Aplicación web | API ReservaYa | Llama a la API | HTTPS/JSON |
-| Aplicación web | Google Maps | Carga el mapa con los locales (Maps JavaScript API) | HTTPS |
-| Aplicación web | Waze / Google Maps | Abre la ruta con un enlace «Cómo llegar» | HTTPS (enlace) |
-| API ReservaYa | Base de datos | Lee y escribe información | SQL sobre TCP |
-| API ReservaYa | Caché y bloqueos | Bloquea horarios y lee la disponibilidad en memoria | TCP |
-| API ReservaYa | Almacenamiento de archivos | Sube y consulta comprobantes y fotos | HTTPS/REST |
-| API ReservaYa | OpenRouter | Solicita recomendaciones, chat y lectura de comprobantes | HTTPS/REST |
-| API ReservaYa | Servicio de correo | Envía notificaciones | HTTPS/REST |
-| API ReservaYa | Google Maps | Convierte la dirección del local en coordenadas (Geocoding API) | HTTPS/REST |
+| Aplicación web | Servidor de la aplicación | Pide páginas y llama a la API REST | HTTPS/JSON |
+| Aplicación web | Supabase Auth | Inicia sesión y cierra sesión (cliente del navegador) | HTTPS |
+| Aplicación web | OpenStreetMap | Descarga las teselas del mapa (Leaflet) | HTTPS |
+| Servidor de la aplicación | Base de datos | Llama a funciones `fn_*` con la sesión de quien pide | HTTPS (PostgREST) |
+| Servidor de la aplicación | Almacenamiento | Sube capturas y crea enlaces firmados | HTTPS/REST |
+| Servidor de la aplicación | OpenRouter | Pide la lectura del comprobante a un modelo con visión | HTTPS/REST |
 
 ---
 
@@ -60,14 +59,12 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 
 | Decisión | Alternativa descartada | Motivo |
 |---|---|---|
-| Un único contenedor de backend (monolito modular) | Microservicios | Equipo pequeño y plazo acotado; los módulos permiten separar servicios en el futuro si es necesario |
-| Frontend separado del backend (Next.js + API REST) | Todo dentro de Next.js | El frontend y el backend evolucionan y se despliegan de forma independiente |
-| PostgreSQL como base de datos | Base de datos NoSQL | Las reservas y pagos necesitan transacciones; además PostgreSQL impide que dos reservas se crucen en la misma cancha (restricción de exclusión) |
-| Redis para bloquear horarios | Solo controlar en la base de datos | Si dos jugadores eligen el mismo horario al mismo tiempo, solo el primero obtiene el bloqueo; el otro recibe aviso inmediato |
-| Comprobantes en almacenamiento de archivos | Guardar las imágenes en la base de datos | Las imágenes pesan; la base de datos guarda solo la ruta |
-| Solo la API se comunica con los sistemas externos (excepto el mapa) | Llamar a OpenRouter desde el navegador | La clave de OpenRouter queda en el servidor y no se expone al jugador. El mapa sí se carga en el navegador porque así funciona Google Maps; se usa una clave distinta, restringida al dominio del sistema |
-| PostGIS para buscar canchas cercanas | Preguntar a Google la distancia de cada local | La distancia se calcula en la base de datos sin costo y con un índice espacial |
-| Tareas programadas dentro de la API | Un servicio aparte para tareas | Son pocas y livianas; mantenerlas en el monolito simplifica el despliegue |
+| Web y API en una sola aplicación Next.js (ADR-009) | API NestJS separada en Render | Un solo despliegue gratuito; el plan gratis de Render apaga el servidor. La API REST es la misma (`/api/...`) |
+| Monolito modular con Clean Architecture (ADR-001, ADR-002) | Microservicios | Equipo de una persona y plazo acotado; los módulos permiten separar servicios en el futuro |
+| Supabase como backend administrado (ADR-010) | Servidor de base de datos propio | Base, autenticación y archivos en un solo servicio gratuito, con RLS |
+| Anti doble reserva en PostgreSQL (ADR-011) | Bloqueo en Redis | La restricción de la base es la garantía más fuerte y no depende de otro servicio |
+| Comprobantes en almacenamiento privado | Guardar las imágenes en la base de datos | Las imágenes pesan; la base guarda solo la ruta y su huella SHA-256 |
+| Solo el servidor habla con OpenRouter | Llamar a la IA desde el navegador | La clave `OPENROUTER_API_KEY` nunca llega al navegador |
 
 ---
 
@@ -75,10 +72,7 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 
 | Comunicación | Medida |
 |---|---|
-| Navegador → Aplicación web y API | Tráfico cifrado con HTTPS (dominio propio con Cloudflare) |
-| Aplicación web → API | Autenticación con token JWT en cada petición y permisos por rol (jugador, dueño, administrador) |
-| API → Base de datos, caché y almacenamiento | Acceso solo con credenciales guardadas en variables de entorno |
-| API → Sistemas externos | Clave de OpenRouter, del servicio de correo y de geocodificación guardadas solo en el servidor |
-| Aplicación web → Google Maps | Clave pública del mapa restringida por dominio (HTTP referrer) y solo a Maps JavaScript API |
-
----
+| Navegador → Servidor | HTTPS; las páginas privadas exigen sesión (`proxy.ts`) |
+| Servidor → Base de datos | Se usa la sesión de quien pide: la base valida el rol con `auth.uid()`; las tablas sensibles (`bookings`, `payments`) no se exponen y todo pasa por funciones `SECURITY DEFINER` |
+| Servidor → Almacenamiento | Bucket privado con RLS; las imágenes se ven solo con enlaces firmados de 15 minutos |
+| Servidor → OpenRouter | Clave solo en las variables de entorno del servidor (Vercel, tipo Secret) |
