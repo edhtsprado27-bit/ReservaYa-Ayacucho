@@ -1,148 +1,101 @@
 # API REST
 
-> **Proyecto:** ReservaYa Ayacucho · **Base:** `https://api.reservaya.pe/api/v1` (dominio de ejemplo) · **Formato:** JSON  
-> **Autenticación:** JWT en la cabecera `Authorization: Bearer <token>` · **Versión:** 1.0
+> **Proyecto:** ReservaYa Ayacucho · **Base:** `https://reservaya-ayacucho.vercel.app/api` · **Formato:** JSON  
+> **Implementación:** Route Handlers de Next.js (`apps/web/src/app/api/**/route.ts`) · **Versión:** 2.0 (Sprint 2: endpoints implementados)  
+> **Autenticación:** sesión de Supabase Auth en cookies (la envía el navegador); la base de datos valida el rol con `auth.uid()`.
 
 ---
 
-## 1. Endpoints
+## 1. Endpoints implementados
 
-### 1.1 Usuarios
+| Método | Ruta | Quién | Descripción | Respuesta correcta |
+|---|---|---|---|---|
+| GET | `/api/canchas` | Público | Canchas publicadas (aprobadas) para el mapa y la lista | `200 { canchas, total, generado }` |
+| POST | `/api/canchas` | Dueño o admin | Registra una cancha; queda en revisión | `201 { ok, id, slug, estado }` |
+| PUT | `/api/canchas/{id}` | Dueño de la cancha o admin | Corrige una cancha que sigue en revisión (devuelve un id nuevo) | `200 { ok, id, slug, estado }` |
+| DELETE | `/api/canchas/{id}` | Dueño de la cancha o admin | Quita una cancha que sigue en revisión | `200 { ok }` |
+| GET | `/api/canchas/mias` | Con sesión | Canchas en revisión que la persona puede ver | `200 { canchas }` |
+| POST | `/api/admin/locales/{id}` | Admin | `{ accion: "aprobar" \| "rechazar", motivo? }` | `200 { ok, id, nombre, estado }` |
+| GET | `/api/disponibilidad?local={id}&fecha=AAAA-MM-DD` | Público | Grilla del día: libre, ocupado, pasado o cerrado, con precio | `200 { turnos, generado }` |
+| GET | `/api/reservas` | Con sesión | Mis reservas (sin sesión: lista vacía) | `200 { ok, reservas }` |
+| POST | `/api/reservas` | Con sesión | Aparta un horario: `{ canchaId, inicio, fin, clave }` | `201 { ok, reserva }` |
+| POST | `/api/reservas/{id}/cancelar` | Dueño de la reserva | Cancela: `{ motivo? }` | `200 { ok, conDevolucion }` |
+| POST | `/api/reservas/{id}/pago` | Dueño de la reserva | `multipart/form-data`: `imagen` (JPG/PNG/WEBP, máx. 3 MB) y `metodo` (`yape` \| `plin`) | `201 { ok, pago, estadoPago, resultado }` |
+| POST | `/api/pagos/{id}/revisar` | Dueño del local o admin | `{ accion: "confirmar" \| "rechazar", motivo? }` | `200 { ok, estadoReserva }` |
+| PUT | `/api/locales/{id}/pago` | Dueño del local o admin | Datos para cobrar: `{ yape?, plin?, titular? }` | `200 { ok, datos }` |
 
-| Método | Ruta | Quién | Descripción |
-|---|---|---|---|
-| POST | `/auth/registro` | Público | Crea una cuenta (jugador o dueño) |
-| POST | `/auth/login` | Público | Devuelve el token JWT |
-| GET | `/usuarios/me` | Autenticado | Datos del usuario actual |
-
-### 1.2 Canchas y mapa
-
-| Método | Ruta | Quién | Descripción |
-|---|---|---|---|
-| GET | `/locales?distrito=&nombre=&servicio=` | Público | Busca locales aprobados por distrito, nombre o servicio |
-| GET | `/locales/cercanos?lat=&lng=&radio=3000` | Público | Locales más cercanos al jugador (PostGIS) |
-| GET | `/locales/:id` | Público | Detalle del local, canchas, fotos, coordenadas y enlaces «Cómo llegar» (Google Maps y Waze) |
-| POST | `/locales` | Dueño | Registra un local; si no envía coordenadas, se geocodifica la dirección con Google Maps |
-| PATCH | `/locales/:id` | Dueño del local | Actualiza datos, ubicación o números Yape/Plin |
-| POST | `/locales/:id/canchas` | Dueño del local | Agrega una cancha |
-| POST | `/locales/:id/fotos` | Dueño del local | Sube fotos |
-
-### 1.3 Horarios y disponibilidad
-
-| Método | Ruta | Quién | Descripción |
-|---|---|---|---|
-| GET | `/canchas/:id/disponibilidad?fecha=2026-11-07` | Público | Horas libres y ocupadas del día, con el precio de cada hora |
-| PUT | `/canchas/:id/horarios` | Dueño de la cancha | Define horarios de atención |
-| PUT | `/canchas/:id/tarifas` | Dueño de la cancha | Define tarifas hora pico y normal |
-| POST | `/canchas/:id/bloqueos` | Dueño de la cancha | Cierra un horario (mantenimiento, torneo) |
-
-### 1.4 Reservas
-
-| Método | Ruta | Quién | Descripción |
-|---|---|---|---|
-| POST | `/reservas` | Jugador | Crea la reserva (`201`) o responde `409` si el horario ya está tomado |
-| GET | `/reservas/mias` | Jugador | Reservas del jugador con su estado |
-| GET | `/reservas/:id` | Jugador o dueño | Detalle de la reserva, monto y números Yape/Plin del dueño |
-| POST | `/reservas/:id/cancelar` | Jugador | Cancela (hasta 2 horas antes) |
-| GET | `/locales/:id/reservas?fecha=` | Dueño del local | Agenda del día del dueño |
-
-### 1.5 Pagos
-
-| Método | Ruta | Quién | Descripción |
-|---|---|---|---|
-| POST | `/reservas/:id/comprobante` | Jugador | Sube la captura (multipart, JPG/PNG, máx. 5 MB); la IA la lee |
-| GET | `/locales/:id/pagos?estado=VERIFICADO_IA` | Dueño del local | Pagos por revisar, con lo que leyó la IA |
-| PATCH | `/pagos/:id` | Dueño del local | `{ "aprobado": true }` o `{ "aprobado": false, "motivo": "..." }` |
-
-### 1.6 Asistente IA
-
-| Método | Ruta | Quién | Descripción |
-|---|---|---|---|
-| POST | `/asistente/chat` | Autenticado | Envía un mensaje; responde en streaming (SSE) |
-| GET | `/asistente/recomendaciones?lat=&lng=&fecha=` | Autenticado | Canchas sugeridas según ubicación, horario y reservas anteriores |
-
-### 1.7 Administración
-
-| Método | Ruta | Quién | Descripción |
-|---|---|---|---|
-| GET | `/admin/locales?estado=PENDIENTE` | Administrador | Locales por aprobar |
-| PATCH | `/admin/locales/:id` | Administrador | Aprueba, rechaza o suspende un local |
-| GET | `/admin/usuarios` | Administrador | Lista y gestiona usuarios |
-| GET | `/admin/estadisticas` | Administrador | Reservas por distrito, ingresos estimados, uso y costo de IA |
+> La documentación interactiva (OpenAPI/Swagger) se publica en `/api-docs` en el Sprint 2.
 
 ---
 
-## 2. Ejemplo: crear una reserva
+## 2. Ejemplo: reservar un horario
 
 ```http
-POST /api/v1/reservas
-Authorization: Bearer eyJhbGciOi...
+POST /api/reservas
 Content-Type: application/json
+Cookie: sb-...-auth-token=...
 
-{ "canchaId": "6f1c...", "fecha": "2026-11-07", "horaInicio": 19, "horaFin": 21 }
+{ "canchaId": "6f1c...", "inicio": "2026-12-01T19:00:00-05:00", "fin": "2026-12-01T21:00:00-05:00", "clave": "7d0b9c1e-..." }
 ```
 
 ```json
 // 201 Created
-{
-  "reservaId": "a3d2...",
-  "codigo": "RY-4K7P",
-  "total": 120.00,
-  "expiraEn": "2026-11-01T20:58:00-05:00",
-  "pago": { "yape": "987654321", "titular": "Juan Q." }
-}
+{ "ok": true, "reserva": { "id": "a3d2...", "codigo": "RY-4K7P", "estado": "pending_payment",
+  "inicio": "...", "fin": "...", "total": 120, "adelanto": 60, "vence": "2026-12-01T18:15:00Z" } }
 ```
 
 ```json
 // 409 Conflict
-{ "codigo": "HORARIO_OCUPADO", "mensaje": "Ese horario acaba de ser reservado. Elige otro." }
+{ "ok": false, "codigo": "HORARIO_OCUPADO", "error": "Alguien acaba de reservar ese horario. Elige otra hora: la grilla ya está actualizada." }
 ```
 
+La `clave` es un identificador único por intento: si el mismo pedido llega dos veces (doble clic o red lenta), se devuelve la misma reserva sin duplicarla.
+
 ---
 
-## 3. Integración con OpenRouter
+## 3. Errores
 
-| Función | Modelo sugerido | Entrada | Salida esperada |
-|---|---|---|---|
-| Lectura de comprobante | Modelo con visión (ej. Gemini Flash o Claude) | Imagen del comprobante + monto esperado | JSON: `{ monto, fecha, numeroOperacion, titular, coincide }` |
-| Chat de soporte | Modelo económico (ej. Llama 3) | Pregunta + contexto (políticas, horarios) | Texto |
-| Recomendaciones | Modelo económico | Canchas cercanas disponibles (de la BD) + preferencias | Lista ordenada con motivo |
+Todas las rutas responden los errores con el mismo formato: `{ ok: false, codigo, error }` (las rutas públicas de lectura, sin `ok`). El `codigo` es estable y el `error` es un mensaje para la persona.
 
-| Regla | Motivo |
+| Código HTTP | Cuándo | Códigos de ejemplo |
+|---|---|---|
+| 400 | Datos inválidos | `DATOS_INVALIDOS`, `DATOS_INVALIDOS_RESERVA`, `HORARIO_PASADO`, `IMAGEN_INVALIDA` |
+| 401 | Sin sesión | `SIN_SESION` |
+| 403 | Sin permiso | `SOLO_DUENOS`, `SOLO_ADMIN`, `LOCAL_AJENO` |
+| 404 | No existe o no es tuyo | `RESERVA_NO_ENCONTRADA`, `PROPUESTA_NO_ENCONTRADA`, `PAGO_NO_ENCONTRADO` |
+| 409 | Conflicto | `HORARIO_OCUPADO`, `PAGO_YA_ENVIADO`, `RESERVA_VENCIDA`, `LOCAL_DUPLICADO` |
+| 413 | Archivo muy grande | `IMAGEN_GRANDE` |
+| 429 | Demasiados pedidos | `DEMASIADAS_PENDIENTES`, `DEMASIADAS_PROPUESTAS` |
+| 500 / 502 | Falla de configuración o de Supabase | `FALTA_CONFIGURAR_SUPABASE`, `SIN_CONEXION`, `DESCONOCIDO` |
+
+La lista completa de códigos y mensajes está en `apps/web/src/modules/compartido/dominio/error-aplicacion.ts`.
+
+---
+
+## 4. Integración con OpenRouter
+
+| Aspecto | Implementación |
 |---|---|
-| El modelo se elige con variables de entorno (`OPENROUTER_MODELO_OCR`, `OPENROUTER_MODELO_CHAT`) | Cambiar de modelo sin tocar código |
-| La IA **nunca** confirma un pago: solo sugiere | El dueño es quien ve el abono en su Yape |
-| Si OpenRouter falla, el pago queda en `SUBIDO` para revisión manual | El sistema sigue funcionando sin IA (EQ-03) |
-| Las recomendaciones solo usan canchas que la API ya consultó en la BD | Evita que la IA invente canchas u horarios |
-| Cada llamada se registra en `ia_uso` | Control de costos |
+| Función | Leer el comprobante: monto, número de operación, fecha y hora, destinatario |
+| Modelo | Se elige en la tabla `ai_model_configs` (`receipt_ocr`): modelo principal gratuito y hasta dos de respaldo; 25 s por modelo |
+| Respuesta | JSON con esquema fijo; se valida con `validarLectura()` antes de usarla (nunca se confía a ciegas) |
+| Comparación | La base compara con lo esperado: `match`, `amount_mismatch`, `recipient_mismatch`, `date_out_of_range`, `duplicate_operation`, `unreadable` |
+| Regla | La IA nunca confirma un pago: quien decide es el dueño |
+| Si falla | El pago queda `submitted` para revisión manual; el sistema sigue funcionando |
+| Registro | Cada llamada se guarda en `ai_requests` (modelo, tokens, costo, latencia, estado) |
+| Seguridad | `OPENROUTER_API_KEY` solo en el servidor |
 
 ---
 
-## 4. Estrategia de caché y CDN
+## 5. Estrategia de caché y CDN
 
-| Capa | Qué se guarda | Tiempo | Cuándo se borra |
+| Capa | Qué se guarda | Tiempo | Cuándo se renueva |
 |---|---|---|---|
-| **Cloudflare (CDN)** | Archivos estáticos de Next.js, fotos de canchas | Larga duración (archivos con hash en el nombre) | Al desplegar una nueva versión |
-| **Cloudflare (CDN)** | `GET /locales` y `GET /locales/:id` (públicos) | 60 segundos | Al vencer |
-| **Next.js (Vercel)** | Páginas de locales (regeneración incremental) | 5 minutos | Al editar el local |
-| **Redis** | `disp:{canchaId}:{fecha}` → disponibilidad del día | 30 segundos | Al crear, cancelar o expirar una reserva de esa cancha y fecha |
-| **Redis** | `bloqueo:{canchaId}:{fecha}:{hora}` → bloqueo temporal | 10 minutos | Al vencer o si la reserva falla |
-| **Redis** | `limite:{usuarioId}:asistente` → límite de mensajes a la IA | 1 hora | Al vencer |
-| **Ninguna** | Reservas, pagos y datos del usuario | — | Nunca se guardan en caché compartida |
+| CDN (Vercel) | `GET /api/canchas` | 60 s (y hasta 5 min viejo mientras se renueva) | Al vencer |
+| Memoria del servidor | Catálogo de canchas (`CatalogoEnCache`) | 30 s | Al vencer o al aprobar una cancha |
+| CDN (Vercel) | `GET /api/disponibilidad` | 5 s (y hasta 15 s viejo) | Al vencer; tras un choque la web pide sin caché |
+| Caché de Next.js (`"use cache"`) | Ficha pública del local | 1 min | Al vencer |
+| Redis (Upstash) *(Sprint 2)* | Catálogo y disponibilidad compartidos entre instancias | Por definir con las pruebas k6 | Al reservar, cancelar o aprobar |
+| Sin caché (`private, no-store`) | Reservas, pagos y datos de la cuenta | — | Nunca se guardan en caché compartida |
 
-> La disponibilidad **nunca** se sirve desde Cloudflare: cambia cada minuto y una copia vieja haría que el jugador vea libre un horario ocupado.
-
----
-
-## 5. Códigos de respuesta
-
-| Código | Cuándo |
-|---|---|
-| 200 / 201 | Operación correcta / recurso creado |
-| 400 | Datos inválidos (por ejemplo, hora de fin menor que la de inicio) |
-| 401 | Sin token o token vencido |
-| 403 | Sin permiso (un jugador intenta validar un pago) |
-| 404 | No existe |
-| 409 | Horario ocupado o comprobante ya usado |
-| 422 | Regla de negocio incumplida (cancelar a menos de 2 horas) |
-| 429 | Demasiadas solicitudes (límite por usuario) |
+> Aunque la grilla en caché muestre libre un horario recién tomado, **la base de datos igual impide la doble reserva**: el segundo pedido recibe `409`.

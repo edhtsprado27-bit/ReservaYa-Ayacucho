@@ -1,6 +1,6 @@
 # Plan de trabajo
 
-> **Proyecto:** ReservaYa Ayacucho · **Metodología:** iteraciones de 1 semana · **Versión:** 1.0
+> **Proyecto:** ReservaYa Ayacucho · **Metodología:** iteraciones cortas con Spec-Driven Development · **Versión:** 2.0
 
 ---
 
@@ -8,26 +8,27 @@
 
 | Fase | Herramienta | Entregable | Estado |
 |---|---|---|---|
-| 1. Requerimientos | Notion | Actores, historias, requisitos y atributos de calidad (`docs/01`) | Hecho |
-| 2. Arquitectura y diseño | Markdown + Mermaid | Arquitectura, patrones, SOLID y modelo C4 (`docs/02` a `docs/04`) | Hecho |
-| 3. Modelo de datos | dbdiagram.io → DataGrip | Diagrama E-R y SQL ejecutado en Supabase (`docs/05/01`) | Por hacer |
-| 4. Desarrollo | VS Code + GitHub | Código en `tecnologia/frontend` y `tecnologia/backend` | Por hacer |
-| 5. Pruebas | Jest + k6 | Pruebas unitarias, de concurrencia y de rendimiento | Por hacer |
-| 6. Despliegue | Vercel, Render, Supabase, Upstash, Cloudflare | Sistema publicado con dominio propio (`docs/05/03`) | Por hacer |
+| 1. Requerimientos | Markdown | Actores, historias, requisitos y atributos de calidad (`docs/01`) | Hecho (Sprint 1) |
+| 2. Arquitectura y diseño | Markdown + Mermaid | Arquitectura, patrones, SOLID y modelo C4 (`docs/02` a `docs/04`) | Hecho; actualizado en el Sprint 2 para reflejar el código |
+| 3. Modelo de datos | SQL en Supabase | Esquema inicial y migraciones (`database/`) | Hecho |
+| 4. Desarrollo | VS Code + GitHub, Spec-Driven Development (`specs/`) | Código en `apps/web` organizado por módulos y capas | Primera versión funcional publicada (Sprint 2) |
+| 5. Pruebas | Jest, GitHub Actions, k6 | Pruebas unitarias con cobertura, CI y pruebas de carga | Sprint 2 |
+| 6. Despliegue | Vercel, Supabase, Upstash, Cloudflare | Sistema publicado (`docs/05/03`) | Publicado en Vercel; dominio propio y Redis en el Sprint 2 |
 
 ---
 
 ## 2. Iteraciones de desarrollo
 
-| Iteración | Objetivo | Historias | Tareas principales |
-|---|---|---|---|
-| 1 | Base del proyecto | — | Crear monorepo, NestJS y Next.js con Clean Architecture; conectar Supabase y Redis; autenticación JWT con roles |
-| 2 | Locales y mapa | HU02, HU07, HU09 | Registro de locales con Google Maps (marcar punto o geocodificar), aprobación del administrador, mapa de locales y botones Google Maps / Waze |
-| 3 | Búsqueda y disponibilidad | HU01 | Búsqueda por distrito, nombre y cercanía (PostGIS); horarios, tarifas pico/normal; disponibilidad con caché en Redis |
-| 4 | Reservas sin cruces | HU03, HU06 | Módulo Reservas (nivel 4), bloqueo en Redis, restricción `EXCLUDE`, cancelación, tarea de expiración |
-| 5 | Pagos con IA | HU04, HU05 | Subida a Supabase Storage, lectura con OpenRouter, panel del dueño para validar |
-| 6 | Notificaciones y asistente | HU08, HU10 | Correos con Resend, recordatorios, chat y recomendaciones con OpenRouter |
-| 7 | Calidad y despliegue | — | Pruebas EQ-01 a EQ-05, Cloudflare, monitoreo, datos reales de Huamanga, demostración |
+| Iteración | Objetivo | Historias | Resultado | Estado |
+|---|---|---|---|---|
+| 1 | Base del proyecto | — | Next.js 16 + Supabase; despliegue automático en Vercel | Hecho |
+| 2 | Locales y mapa | HU02, HU07, HU09 | Mapa con OpenStreetMap, registro de canchas marcando el punto, aprobación del admin, «Cómo llegar» con Google Maps y Waze (spec 003) | Hecho |
+| 3 | Cuentas y roles | — | Login con Supabase Auth, roles jugador, dueño y admin, paneles (spec 004) | Hecho |
+| 4 | Reservas sin cruces | HU01, HU03, HU06 | Grilla de 14 días, apartado de 15 min, `EXCLUDE`, idempotencia, cancelación (spec 005) | Hecho |
+| 5 | Pagos con IA | HU04, HU05 | Captura en Storage privado, lectura con OpenRouter, revisión del dueño (spec 006) | Hecho |
+| 6 | Arquitectura en el código | — | Módulos con Clean Architecture, puertos y adaptadores, documentos alineados | Hecho (Sprint 2) |
+| 7 | Calidad | — | Swagger, Jest + cobertura, GitHub Actions, Redis, k6 hasta 2 000 usuarios, análisis de BD y caché | Sprint 2 |
+| 8 | Paneles completos y avisos | HU08, HU10 | Agenda del dueño, precios y horarios desde la web, notificaciones | Siguiente |
 
 ---
 
@@ -37,7 +38,7 @@
 |---|---|---|
 | Inicio | Jugador | Buscador por distrito, botón «Cerca de mí» y mapa con los locales |
 | Detalle del local | Jugador | Fotos, canchas, servicios, mapa, botones «Google Maps» y «Waze», calendario de horas libres |
-| Confirmar reserva | Jugador | Resumen, total, contador de 10 minutos, número Yape/Plin y subida del comprobante |
+| Confirmar reserva | Jugador | Resumen, total, cuenta regresiva de 15 minutos, número Yape/Plin y subida del comprobante |
 | Mis reservas | Jugador | Estado de cada reserva, cancelar, cómo llegar |
 | Asistente | Jugador | Chat con la IA |
 | Mis locales | Dueño | Registro con mapa para marcar la ubicación, canchas, horarios y tarifas |

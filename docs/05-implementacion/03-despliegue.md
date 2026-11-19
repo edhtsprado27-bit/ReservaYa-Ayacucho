@@ -1,90 +1,54 @@
 # Despliegue
 
-> **Proyecto:** ReservaYa Ayacucho · **Entornos:** desarrollo local y producción · **Versión:** 1.0
+> **Proyecto:** ReservaYa Ayacucho · **Entornos:** desarrollo local y producción · **Versión:** 2.0 (Sprint 2: despliegue real)
 
 ---
 
-## 1. Servicios que se necesitan
+## 1. Servicios que se usan
 
-| Servicio | Para qué | Cuenta que se crea |
+| Servicio | Para qué | Estado |
 |---|---|---|
-| **GitHub** | Repositorio y despliegue automático | Repositorio del proyecto |
-| **Vercel** | Frontend Next.js | Proyecto conectado a `tecnologia/frontend` |
-| **Render** | Backend NestJS (API y tareas programadas) | Web Service conectado a `tecnologia/backend` |
-| **Supabase** | PostgreSQL + PostGIS y almacenamiento de imágenes | Proyecto con los buckets `comprobantes` (privado) y `fotos` (público) |
-| **Upstash** | Redis para bloqueos, disponibilidad y límites | Base de datos Redis |
-| **OpenRouter** | Modelos de IA | Clave de API con límite de gasto |
-| **Google Cloud** | Maps JavaScript API y Geocoding API | Proyecto con facturación activa y dos claves |
-| **Resend** | Envío de correos | Dominio verificado |
-| **Cloudflare** | Dominio, DNS, HTTPS y CDN | Dominio del sistema (ej. `reservaya.pe`) |
+| **GitHub** | Repositorio; cada push a `main` despliega solo | En uso |
+| **Vercel** | Aplicación Next.js (web + API), CDN y funciones en São Paulo (`gru1`) | En uso: https://reservaya-ayacucho.vercel.app |
+| **Supabase** | PostgreSQL, Auth y Storage (bucket privado `comprobantes`), región São Paulo | En uso |
+| **OpenRouter** | Modelos de IA gratuitos para leer comprobantes | En uso |
+| **OpenStreetMap** | Teselas del mapa (sin clave) | En uso |
+| **GitHub Actions** | Pruebas automáticas (Jest) en cada cambio | Sprint 2 |
+| **Upstash** | Redis para la caché compartida | Sprint 2 |
+| **Cloudflare** | Dominio propio, DNS y CDN | Sprint 2 |
 
 ---
 
-## 2. Arquitectura de despliegue
+## 2. Variables de entorno
 
-| Dirección | Apunta a | Servicio |
+### Vercel (y `apps/web/.env.local` en desarrollo)
+
+| Variable | Descripción | Visible en el navegador |
 |---|---|---|
-| `reservaya.pe` | Frontend | Vercel (a través de Cloudflare) |
-| `api.reservaya.pe` | Backend | Render (a través de Cloudflare) |
-| — | Base de datos y almacenamiento | Supabase (solo accesible desde el backend) |
-| — | Redis | Upstash (solo accesible desde el backend) |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto de Supabase | Sí (es pública) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave publicable de Supabase (lo que protege los datos es RLS) | Sí (es pública) |
+| `OPENROUTER_API_KEY` | Clave de OpenRouter, tipo **Secret**, solo Production | **No** |
+
+> Nunca se usan en la web la clave `secret` ni `service_role` de Supabase.
 
 ---
 
-## 3. Variables de entorno
-
-### Backend (Render)
-
-| Variable | Ejemplo / descripción |
-|---|---|
-| `DATABASE_URL` | Cadena de conexión de Supabase (con pooler) |
-| `REDIS_URL` | `rediss://...upstash.io:6379` |
-| `SUPABASE_URL` | URL del proyecto Supabase |
-| `SUPABASE_SERVICE_KEY` | Clave de servicio (solo en el backend) |
-| `JWT_SECRET` | Texto largo y aleatorio |
-| `OPENROUTER_API_KEY` | Clave de OpenRouter |
-| `OPENROUTER_MODELO_OCR` | Modelo con visión para comprobantes |
-| `OPENROUTER_MODELO_CHAT` | Modelo económico para chat y recomendaciones |
-| `GOOGLE_GEOCODING_KEY` | Clave de Google restringida por IP y solo a Geocoding API |
-| `RESEND_API_KEY` | Clave de Resend |
-| `CORREO_REMITENTE` | `reservas@reservaya.pe` |
-| `FRONTEND_URL` | `https://reservaya.pe` (para CORS) |
-| `TZ` | `America/Lima` |
-
-### Frontend (Vercel)
-
-| Variable | Ejemplo / descripción |
-|---|---|
-| `NEXT_PUBLIC_API_URL` | `https://api.reservaya.pe/api/v1` |
-| `NEXT_PUBLIC_GOOGLE_MAPS_KEY` | Clave pública restringida al dominio `reservaya.pe` y solo a Maps JavaScript API |
-
-> Las claves que empiezan con `NEXT_PUBLIC_` son visibles en el navegador: por eso la de Google Maps del frontend es **distinta** de la del backend y está restringida por dominio.
-
----
-
-## 4. Pasos de despliegue
+## 3. Pasos de despliegue
 
 | Paso | Acción |
 |---|---|
-| 1 | Crear el proyecto en Supabase, activar PostGIS y ejecutar el SQL de `01-modelo-de-datos.md` desde DataGrip |
-| 2 | Crear los buckets `comprobantes` (privado) y `fotos` (público) en Supabase Storage |
-| 3 | Crear la base Redis en Upstash |
-| 4 | Crear las claves de OpenRouter, Google Maps (2 claves) y Resend |
-| 5 | Desplegar el backend en Render con las variables de entorno; comprobar `GET /api/v1/salud` |
-| 6 | Desplegar el frontend en Vercel con sus variables |
-| 7 | Comprar o configurar el dominio en Cloudflare y apuntar `reservaya.pe` a Vercel y `api.reservaya.pe` a Render |
-| 8 | Activar en Cloudflare HTTPS completo y las reglas de caché de `02-api-rest.md` |
-| 9 | Cargar datos de prueba (locales reales de Huamanga con sus coordenadas) y probar el flujo completo de reserva y pago |
+| 1 | Crear el proyecto en Supabase y ejecutar en el SQL Editor el esquema inicial y las migraciones de `database/migrations/` en orden (004 → 009) |
+| 2 | En Supabase Auth: Site URL `https://reservaya-ayacucho.vercel.app` y Redirect URLs `http://localhost:3000/**` y `https://reservaya-ayacucho.vercel.app/**` |
+| 3 | Crear el proyecto en Vercel con **Root Directory** `apps/web` y cargar las variables de entorno |
+| 4 | Hacer push a `main`: Vercel compila (`next build`) y publica |
+| 5 | **Antes** de subir código que use funciones nuevas de la base, ejecutar su migración en Supabase (si no, la web muestra «Ejecuta las migraciones») |
 
 ---
 
-## 5. Monitoreo
+## 4. Monitoreo
 
-| Qué | Herramienta |
+| Qué | Dónde |
 |---|---|
-| Errores del backend y frontend | Sentry (plan gratuito) |
-| Disponibilidad de la API | UptimeRobot llamando a `/api/v1/salud` cada 5 minutos |
-| Costo de IA | Tabla `ia_uso` y panel de OpenRouter |
-| Costo de Google Maps | Alertas de presupuesto en Google Cloud |
-
-> **Nota:** el plan gratuito de Render apaga el servicio cuando no recibe visitas y tarda en encender. Para la demostración conviene el plan pagado más bajo o mantenerlo activo con UptimeRobot.
+| Errores y registros del servidor | Vercel → proyecto → Logs |
+| Uso y costo de la IA | Tabla `ai_requests` y panel de OpenRouter |
+| Base de datos | Supabase → Reports |

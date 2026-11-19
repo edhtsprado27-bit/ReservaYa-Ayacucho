@@ -1,14 +1,13 @@
 # Tecnología
 
-Aquí irá el código del proyecto, organizado con Clean Architecture.
+El código del sistema está en **`apps/web`** (una sola aplicación: web + API REST, ver ADR-009).
 
-| Carpeta | Tecnología | Despliegue |
+| Carpeta | Contenido | Despliegue |
 |---|---|---|
-| `frontend/` | Next.js (React) + TypeScript | Vercel |
-| `backend/` | Node.js + NestJS + TypeScript (monolito modular) | Render |
+| `apps/web` | Next.js 16 + TypeScript: páginas, API REST (`src/app/api`) y módulos con Clean Architecture (`src/modules`) | Vercel |
+| `database` | Esquema de PostgreSQL y migraciones (funciones, RLS) | Supabase |
+| `specs` | Especificaciones SDD de cada funcionalidad | — |
 
-Servicios: PostgreSQL + PostGIS (Supabase), Redis (Upstash), Supabase Storage, OpenRouter, Google Maps (mapa y geocodificación), Resend (correo) y Cloudflare (dominio y CDN). Waze se usa solo con enlaces.
+Servicios: Supabase (PostgreSQL, Auth y Storage), OpenRouter (IA), OpenStreetMap + Leaflet (mapa). En el Sprint 2: Redis (Upstash), GitHub Actions y Cloudflare.
 
-Ver `docs/05-implementacion/` para el modelo de datos, la API, el despliegue y el plan de trabajo.
-
-> Pendiente: boilerplate de Clean Architecture con el módulo Reservas como referencia (ver `docs/03-diseño-de-software/diseño-interno/diseño-interno-de-modulos.md`).
+Ver `docs/03-diseño-de-software/diseño-interno/diseño-interno-de-modulos.md` para la organización del código.
