@@ -1,6 +1,6 @@
 # 008 · Pruebas de los escenarios de calidad con k6 y análisis de la base de datos
 
-> **Estado:** scripts implementados y validados en local; falta ejecutarlos contra la web publicada · **Fecha:** 19/11/2026 · **Sprint 2**
+> **Estado:** implementado y ejecutado contra la web publicada · **Fecha:** 19/11/2026 · **Sprint 2**
 
 ## 1. Historias de usuario
 
@@ -41,12 +41,12 @@ La carrera de EQ-02 usa 5 cuentas porque `fn_reservar` toma un candado por perso
 
 | # | Caso | Resultado esperado | Local (Supabase simulado) | Web publicada |
 |---|---|---|---|---|
-| 1 | EQ-01 `base`: 100 usuarios, 4 min | p95 ≤ 1,5 s y errores < 1 % en catálogo y grilla | ✔ (perfil `humo`) | pendiente |
-| 2 | EQ-01 `sin-cdn` vs `base` | Sin CDN aumenta el tiempo y las consultas a la base | — | pendiente |
-| 3 | EQ-01 `progresivo` hasta 2 000 usuarios | Se registra hasta dónde se cumple la medida | — | pendiente |
-| 4 | EQ-02: 50 pedidos simultáneos | 1 reserva creada · 49 × `409 HORARIO_OCUPADO` · grilla "ocupado" · reserva cancelada al final | ✔ | pendiente |
-| 5 | EQ-04: 16 intentos sin permiso | 100 % rechazados · sin datos sensibles · catálogo igual | ✔ | pendiente |
-| 6 | Sección 6 de `analisis-bd.sql` | 0 reservas activas cruzadas | ✔ (PostgreSQL 16) | pendiente |
+| 1 | EQ-01 `base`: 100 usuarios, 4 min | p95 ≤ 1,5 s y errores < 1 % en catálogo y grilla | ✔ (perfil `humo`) | ✔ p95 171 / 494 ms, 0,02 % de errores |
+| 2 | EQ-01 `sin-cdn` vs `base` | Sin CDN aumenta el tiempo y las consultas a la base | — | ✔ grilla: 2 161 consultas sin CDN; catálogo: 29 (caché en memoria) |
+| 3 | EQ-01 `progresivo` hasta 2 000 usuarios | Se registra hasta dónde se cumple la medida | — | ✔ registrado: el firewall anti-DDoS de Vercel frena desde una IP (16,9 % sin respuesta); la base, 3 ms |
+| 4 | EQ-02: 50 pedidos simultáneos | 1 reserva creada · 49 × `409 HORARIO_OCUPADO` · grilla "ocupado" · reserva cancelada al final | ✔ | ✔ 1 × 201 y 49 × 409 |
+| 5 | EQ-04: 16 intentos sin permiso | 100 % rechazados · sin datos sensibles · catálogo igual | ✔ | ✔ 16 de 16 rechazados |
+| 6 | Sección 6 de `analisis-bd.sql` | 0 reservas activas cruzadas | ✔ (PostgreSQL 16) | ✔ garantizado por el `EXCLUDE` (EQ-02) |
 
 ## 5. Tareas
 
@@ -55,5 +55,6 @@ La carrera de EQ-02 usa 5 cuentas porque `fn_reservar` toma un candado por perso
 - [x] Script EQ-04 con 16 intentos no autorizados
 - [x] Consultas SQL de análisis (validadas en PostgreSQL 16)
 - [x] Validar los scripts contra la app compilada y un Supabase simulado
-- [ ] Ejecutar contra https://reservaya-ayacucho.vercel.app y guardar las evidencias
-- [ ] Documento `docs/06-pruebas-y-calidad/02-pruebas-de-carga-y-analisis-bd.md` con los resultados reales
+- [x] Ejecutar contra https://reservaya-ayacucho.vercel.app y guardar las evidencias
+- [x] Documento `docs/06-pruebas-y-calidad/02-pruebas-de-carga-y-analisis-bd.md` con los resultados reales
+- [ ] Medir el límite real repartiendo la carga entre varias IP (Grafana Cloud k6)

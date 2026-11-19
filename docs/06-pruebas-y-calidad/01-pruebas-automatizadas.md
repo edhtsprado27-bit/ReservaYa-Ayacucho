@@ -89,3 +89,9 @@ Para ver los resultados: GitHub → pestaña **Actions** → ejecución del comm
 - Página interactiva: **`/api-docs`** (Swagger UI).
 
 ![Swagger UI de ReservaYa](../../img/evidencias/swagger-api-docs.png)
+
+---
+
+## 7. Pruebas de carga y de calidad
+
+Las pruebas con k6 de los escenarios EQ-01, EQ-02 y EQ-04 y el análisis de la base de datos y la caché están en [`02-pruebas-de-carga-y-analisis-bd.md`](02-pruebas-de-carga-y-analisis-bd.md).

@@ -63,4 +63,4 @@ Los casos de uso reciben sus puertos por parámetro (Clean Architecture), así q
 - [x] Pruebas de integración de las rutas `/api`
 - [x] Workflow de GitHub Actions con resumen y artefacto de cobertura
 - [ ] Pruebas E2E en el navegador (Playwright) de los flujos principales
-- [ ] Pruebas de carga con k6 (escenarios EQ-01 y EQ-02)
+- [x] Pruebas de carga con k6 (escenarios EQ-01, EQ-02 y EQ-04): spec 008

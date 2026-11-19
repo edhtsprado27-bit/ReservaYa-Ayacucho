@@ -34,6 +34,8 @@ Cierra y abre PowerShell, y comprueba con `k6 version`. (Otra opción: el instal
 
 Desde la carpeta `pruebas-carga`. Cada prueba guarda dos evidencias en `resultados/`: un reporte HTML con gráficos y un resumen JSON.
 
+> En Windows, con k6 v2.4.0, la opción `-o web-dashboard=export=...` guardó el HTML pero dejó k6 detenido sin mostrar el resumen. Si pasa, pulsa Ctrl+C y usa solo `--summary-export`.
+
 ```powershell
 k6 run -e PERFIL=humo eq01-rendimiento.js
 k6 run -e PERFIL=base -o web-dashboard=export=resultados/eq01-base.html --summary-export resultados/eq01-base.json eq01-rendimiento.js
@@ -63,5 +65,6 @@ Otra web (por ejemplo `npm run dev`): agrega `-e BASE_URL=http://localhost:3000`
 ## Cuidados
 
 - Las pruebas usan la web real y los planes gratuitos de Vercel y Supabase: no repitas `progresivo` muchas veces.
+- Con `progresivo`, el firewall anti-DDoS de Vercel bloquea un rato la IP que genera la carga (respuestas `403`). Espera unos minutos antes de correr EQ-02 o EQ-04.
 - Durante `progresivo` cierra otros programas: k6 usa bastante memoria con 2 000 usuarios.
 - Antes y después de la carga, ejecuta la sección 7 de `database/analisis/analisis-bd.sql` para ver cuántas consultas llegaron de verdad a la base.

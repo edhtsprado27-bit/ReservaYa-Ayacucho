@@ -1,0 +1,373 @@
+{
+    "root_group": {
+        "checks": {
+            "Sin sesión · Registrar una cancha: rechazado": {
+                "path": "::Sin sesión · Registrar una cancha: rechazado",
+                "id": "e6a2d785fb5b6056a199ba0a5ecab67e",
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Registrar una cancha: rechazado"
+            },
+            "Sin sesión · Registrar una cancha: sin datos sensibles": {
+                "path": "::Sin sesión · Registrar una cancha: sin datos sensibles",
+                "id": "3777d88e820ee89ef691692fd565a860",
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Registrar una cancha: sin datos sensibles"
+            },
+            "Sin sesión · Corregir una cancha publicada: rechazado": {
+                "name": "Sin sesión · Corregir una cancha publicada: rechazado",
+                "path": "::Sin sesión · Corregir una cancha publicada: rechazado",
+                "id": "7873d351f87e76eaea71215ac54bd9a0",
+                "passes": 1,
+                "fails": 0
+            },
+            "Sin sesión · Corregir una cancha publicada: sin datos sensibles": {
+                "name": "Sin sesión · Corregir una cancha publicada: sin datos sensibles",
+                "path": "::Sin sesión · Corregir una cancha publicada: sin datos sensibles",
+                "id": "84bd823b1f86431d8f38084e370c6c9e",
+                "passes": 1,
+                "fails": 0
+            },
+            "Sin sesión · Quitar una cancha publicada: rechazado": {
+                "id": "9ee067951fe5728a55b3c87b1d1a188e",
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Quitar una cancha publicada: rechazado",
+                "path": "::Sin sesión · Quitar una cancha publicada: rechazado"
+            },
+            "Sin sesión · Quitar una cancha publicada: sin datos sensibles": {
+                "name": "Sin sesión · Quitar una cancha publicada: sin datos sensibles",
+                "path": "::Sin sesión · Quitar una cancha publicada: sin datos sensibles",
+                "id": "1ab15804ed40729af3f3dad870be7044",
+                "passes": 1,
+                "fails": 0
+            },
+            "Sin sesión · Aprobar o rechazar un local (admin): rechazado": {
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Aprobar o rechazar un local (admin): rechazado",
+                "path": "::Sin sesión · Aprobar o rechazar un local (admin): rechazado",
+                "id": "31ccca71d80dfe92dc367a62a1b1d917"
+            },
+            "Sin sesión · Aprobar o rechazar un local (admin): sin datos sensibles": {
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Aprobar o rechazar un local (admin): sin datos sensibles",
+                "path": "::Sin sesión · Aprobar o rechazar un local (admin): sin datos sensibles",
+                "id": "a075b63f08fb039c2fec2fdbe95221ce"
+            },
+            "Sin sesión · Cambiar el Yape de un local ajeno: rechazado": {
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Cambiar el Yape de un local ajeno: rechazado",
+                "path": "::Sin sesión · Cambiar el Yape de un local ajeno: rechazado",
+                "id": "2176e1526900d2ba46badacff40fffbe"
+            },
+            "Sin sesión · Cambiar el Yape de un local ajeno: sin datos sensibles": {
+                "id": "1521b89876a44da523981f72cf1162d5",
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Cambiar el Yape de un local ajeno: sin datos sensibles",
+                "path": "::Sin sesión · Cambiar el Yape de un local ajeno: sin datos sensibles"
+            },
+            "Sin sesión · Confirmar un pago ajeno: rechazado": {
+                "path": "::Sin sesión · Confirmar un pago ajeno: rechazado",
+                "id": "e8dc96e36fe2f489b0b54706faf4ddb1",
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Confirmar un pago ajeno: rechazado"
+            },
+            "Sin sesión · Confirmar un pago ajeno: sin datos sensibles": {
+                "name": "Sin sesión · Confirmar un pago ajeno: sin datos sensibles",
+                "path": "::Sin sesión · Confirmar un pago ajeno: sin datos sensibles",
+                "id": "a044329661dbb66310548f25b4ff35de",
+                "passes": 1,
+                "fails": 0
+            },
+            "Sin sesión · Cancelar una reserva ajena: rechazado": {
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Cancelar una reserva ajena: rechazado",
+                "path": "::Sin sesión · Cancelar una reserva ajena: rechazado",
+                "id": "91bcea2474549d82c79bec752c201995"
+            },
+            "Sin sesión · Cancelar una reserva ajena: sin datos sensibles": {
+                "fails": 0,
+                "name": "Sin sesión · Cancelar una reserva ajena: sin datos sensibles",
+                "path": "::Sin sesión · Cancelar una reserva ajena: sin datos sensibles",
+                "id": "e6cc448ec285c0553da828c6c0ab6fcd",
+                "passes": 1
+            },
+            "Sin sesión · Pagar una reserva ajena: rechazado": {
+                "path": "::Sin sesión · Pagar una reserva ajena: rechazado",
+                "id": "44dc412c57cd32741cc3d2210dd9cb36",
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Pagar una reserva ajena: rechazado"
+            },
+            "Sin sesión · Pagar una reserva ajena: sin datos sensibles": {
+                "path": "::Sin sesión · Pagar una reserva ajena: sin datos sensibles",
+                "id": "32d2fd066a65b447bd027bc93f1a3b7b",
+                "passes": 1,
+                "fails": 0,
+                "name": "Sin sesión · Pagar una reserva ajena: sin datos sensibles"
+            },
+            "Jugador · Registrar una cancha: rechazado": {
+                "name": "Jugador · Registrar una cancha: rechazado",
+                "path": "::Jugador · Registrar una cancha: rechazado",
+                "id": "686d26674f3d11d0a13dd3d5adc08551",
+                "passes": 1,
+                "fails": 0
+            },
+            "Jugador · Registrar una cancha: sin datos sensibles": {
+                "passes": 1,
+                "fails": 0,
+                "name": "Jugador · Registrar una cancha: sin datos sensibles",
+                "path": "::Jugador · Registrar una cancha: sin datos sensibles",
+                "id": "51c18258b17c8c4ab3760c3f2bf29629"
+            },
+            "Jugador · Corregir una cancha publicada: rechazado": {
+                "id": "c06fcb468b33fd359f105f52b39dfa35",
+                "passes": 1,
+                "fails": 0,
+                "name": "Jugador · Corregir una cancha publicada: rechazado",
+                "path": "::Jugador · Corregir una cancha publicada: rechazado"
+            },
+            "Jugador · Corregir una cancha publicada: sin datos sensibles": {
+                "fails": 0,
+                "name": "Jugador · Corregir una cancha publicada: sin datos sensibles",
+                "path": "::Jugador · Corregir una cancha publicada: sin datos sensibles",
+                "id": "104c833342ae3bd519bffde72fccd6cd",
+                "passes": 1
+            },
+            "Jugador · Quitar una cancha publicada: rechazado": {
+                "path": "::Jugador · Quitar una cancha publicada: rechazado",
+                "id": "c054c473e64571afeecaf694c40876ba",
+                "passes": 1,
+                "fails": 0,
+                "name": "Jugador · Quitar una cancha publicada: rechazado"
+            },
+            "Jugador · Quitar una cancha publicada: sin datos sensibles": {
+                "name": "Jugador · Quitar una cancha publicada: sin datos sensibles",
+                "path": "::Jugador · Quitar una cancha publicada: sin datos sensibles",
+                "id": "a052fd76105daa41bdcd1965e6720c1e",
+                "passes": 1,
+                "fails": 0
+            },
+            "Jugador · Aprobar o rechazar un local (admin): rechazado": {
+                "id": "041e3d07d690e5f3ba299adbe55b2b1d",
+                "passes": 1,
+                "fails": 0,
+                "name": "Jugador · Aprobar o rechazar un local (admin): rechazado",
+                "path": "::Jugador · Aprobar o rechazar un local (admin): rechazado"
+            },
+            "Jugador · Aprobar o rechazar un local (admin): sin datos sensibles": {
+                "name": "Jugador · Aprobar o rechazar un local (admin): sin datos sensibles",
+                "path": "::Jugador · Aprobar o rechazar un local (admin): sin datos sensibles",
+                "id": "d206b07464e0b2f6923430e21cf6c5ee",
+                "passes": 1,
+                "fails": 0
+            },
+            "Jugador · Cambiar el Yape de un local ajeno: rechazado": {
+                "path": "::Jugador · Cambiar el Yape de un local ajeno: rechazado",
+                "id": "0ba5750ae00d112e2d4254f62cc73742",
+                "passes": 1,
+                "fails": 0,
+                "name": "Jugador · Cambiar el Yape de un local ajeno: rechazado"
+            },
+            "Jugador · Cambiar el Yape de un local ajeno: sin datos sensibles": {
+                "name": "Jugador · Cambiar el Yape de un local ajeno: sin datos sensibles",
+                "path": "::Jugador · Cambiar el Yape de un local ajeno: sin datos sensibles",
+                "id": "06f764374cd766c949bb306afefb8830",
+                "passes": 1,
+                "fails": 0
+            },
+            "Jugador · Confirmar un pago ajeno: rechazado": {
+                "name": "Jugador · Confirmar un pago ajeno: rechazado",
+                "path": "::Jugador · Confirmar un pago ajeno: rechazado",
+                "id": "833338ece77acc1ede1f3dd052701ac7",
+                "passes": 1,
+                "fails": 0
+            },
+            "Jugador · Confirmar un pago ajeno: sin datos sensibles": {
+                "name": "Jugador · Confirmar un pago ajeno: sin datos sensibles",
+                "path": "::Jugador · Confirmar un pago ajeno: sin datos sensibles",
+                "id": "34bee7e7cc3d3e42808f0b060e9383ee",
+                "passes": 1,
+                "fails": 0
+            },
+            "Jugador · Cancelar una reserva ajena: rechazado": {
+                "fails": 0,
+                "name": "Jugador · Cancelar una reserva ajena: rechazado",
+                "path": "::Jugador · Cancelar una reserva ajena: rechazado",
+                "id": "e33b349f4fcc9a10ef474a5329be3c90",
+                "passes": 1
+            },
+            "Jugador · Cancelar una reserva ajena: sin datos sensibles": {
+                "fails": 0,
+                "name": "Jugador · Cancelar una reserva ajena: sin datos sensibles",
+                "path": "::Jugador · Cancelar una reserva ajena: sin datos sensibles",
+                "id": "5bb06a154a5443aa147ff71d5482c05f",
+                "passes": 1
+            },
+            "Jugador · Pagar una reserva ajena: rechazado": {
+                "name": "Jugador · Pagar una reserva ajena: rechazado",
+                "path": "::Jugador · Pagar una reserva ajena: rechazado",
+                "id": "e1d41685d1b97e0daa9663b35198fa1a",
+                "passes": 1,
+                "fails": 0
+            },
+            "Jugador · Pagar una reserva ajena: sin datos sensibles": {
+                "name": "Jugador · Pagar una reserva ajena: sin datos sensibles",
+                "path": "::Jugador · Pagar una reserva ajena: sin datos sensibles",
+                "id": "929fe7b5ab61f6c338ddf5014ada2ff1",
+                "passes": 1,
+                "fails": 0
+            },
+            "Sin sesión · Mis reservas: lista vacía": {
+                "name": "Sin sesión · Mis reservas: lista vacía",
+                "path": "::Sin sesión · Mis reservas: lista vacía",
+                "id": "2e72a95afecb2cc2aaf455387b2e2c71",
+                "passes": 1,
+                "fails": 0
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {}
+    },
+    "metrics": {
+        "data_received": {
+            "count": 32714,
+            "rate": 2670.627801295822
+        },
+        "http_req_duration": {
+            "med": 438.6599,
+            "max": 1148.4817,
+            "p(90)": 858.9667500000002,
+            "p(95)": 944.2181150000001,
+            "avg": 522.366325,
+            "min": 138.5141
+        },
+        "iteration_duration": {
+            "min": 10146.3374,
+            "med": 10146.3374,
+            "max": 10146.3374,
+            "p(90)": 10146.3374,
+            "p(95)": 10146.3374,
+            "avg": 10146.3374
+        },
+        "data_sent": {
+            "count": 15723,
+            "rate": 1283.5569150753258
+        },
+        "checks": {
+            "passes": 33,
+            "fails": 0,
+            "thresholds": {
+                "rate==1": false
+            },
+            "value": 1
+        },
+        "http_req_tls_handshaking": {
+            "avg": 40.33406,
+            "min": 0,
+            "med": 0,
+            "max": 275.2572,
+            "p(90)": 205.71811000000008,
+            "p(95)": 259.78208
+        },
+        "http_req_connecting": {
+            "min": 0,
+            "med": 0,
+            "max": 118.3889,
+            "p(90)": 38.56664000000003,
+            "p(95)": 58.57823000000005,
+            "avg": 11.615860000000001
+        },
+        "http_req_waiting": {
+            "avg": 521.742775,
+            "min": 137.2304,
+            "med": 438.40025,
+            "max": 1148.4817,
+            "p(90)": 858.8758500000001,
+            "p(95)": 943.3545650000002
+        },
+        "vus": {
+            "value": 0,
+            "min": 0,
+            "max": 1
+        },
+        "iterations": {
+            "count": 1,
+            "rate": 0.08163562393152234
+        },
+        "datos_expuestos": {
+            "count": 0,
+            "rate": 0,
+            "thresholds": {
+                "count==0": false
+            }
+        },
+        "http_reqs": {
+            "rate": 1.6327124786304468,
+            "count": 20
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 522.366325,
+            "min": 138.5141,
+            "med": 438.6599,
+            "max": 1148.4817,
+            "p(90)": 858.9667500000002,
+            "p(95)": 944.2181150000001
+        },
+        "vus_max": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "http_req_sending": {
+            "min": 0,
+            "med": 0.435,
+            "max": 0.5375,
+            "p(90)": 0.53453,
+            "p(95)": 0.534935,
+            "avg": 0.28103
+        },
+        "intentos_aceptados": {
+            "count": 0,
+            "rate": 0,
+            "thresholds": {
+                "count==0": false
+            }
+        },
+        "http_req_blocked": {
+            "p(90)": 257.91148000000015,
+            "p(95)": 382.37113000000005,
+            "avg": 66.34887,
+            "min": 0,
+            "med": 0,
+            "max": 468.037
+        },
+        "http_req_receiving": {
+            "p(90)": 0.8511000000000012,
+            "p(95)": 1.6977850000000008,
+            "avg": 0.34252,
+            "min": 0,
+            "med": 0,
+            "max": 2.8052
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 20,
+            "value": 0
+        }
+    },
+    "setup_data": {
+        "local": "1c4895d8-4a23-4632-9908-c144b6f013fb",
+        "totalAntes": 6,
+        "cookieJugador": "sb-naszqnhqnanelxhgepeh-auth-token=base64-eyJhY2Nlc3NfdG9rZW4iOiJleUpoYkdjaU9pSkZVekkxTmlJc0ltdHBaQ0k2SWprNFpERXhOemxpTFRVMk1URXROR1ZqWlMwNVpEYzNMVEUyT0dWaVpqWXpOalF6TkNJc0luUjVjQ0k2SWtwWFZDSjkuZXlKcGMzTWlPaUpvZEhSd2N6b3ZMMjVoYzNweGJtaHhibUZ1Wld4NGFHZGxjR1ZvTG5OMWNHRmlZWE5sTG1OdkwyRjFkR2d2ZGpFaUxDSnpkV0lpT2lJNU56ZGpZakpsWXkxa01qY3dMVFE0WmpBdFlXVmhOUzB6TW1ObFpXUmhOV1F4WWpZaUxDSmhkV1FpT2lKaGRYUm9aVzUwYVdOaGRHVmtJaXdpWlhod0lqb3hOemsxTVRJd01EVTNMQ0pwWVhRaU9qRTNPVFV4TVRZME5UY3NJbVZ0WVdsc0lqb2lhell1YW5WbllXUnZjakZBY21WelpYSjJZWGxoTG5SbGMzUWlMQ0p3YUc5dVpTSTZJaUlzSW1Gd2NGOXRaWFJoWkdGMFlTSTZleUp3Y205MmFXUmxjaUk2SW1WdFlXbHNJaXdpY0hKdmRtbGtaWEp6SWpwYkltVnRZV2xzSWwxOUxDSjFjMlZ5WDIxbGRHRmtZWFJoSWpwN0ltVnRZV2xzSWpvaWF6WXVhblZuWVdSdmNqRkFjbVZ6WlhKMllYbGhMblJsYzNRaUxDSmxiV0ZwYkY5MlpYSnBabWxsWkNJNmRISjFaU3dpYm05dFluSmxJam9pU25WbllXUnZjaUJyTmlJc0luQm9iMjVsWDNabGNtbG1hV1ZrSWpwbVlXeHpaU3dpY205c0lqb2lhblZuWVdSdmNpSXNJbk4xWWlJNklqazNOMk5pTW1WakxXUXlOekF0TkRobU1DMWhaV0UxTFRNeVkyVmxaR0UxWkRGaU5pSjlMQ0p5YjJ4bElqb2lZWFYwYUdWdWRHbGpZWFJsWkNJc0ltRmhiQ0k2SW1GaGJERWlMQ0poYlhJaU9sdDdJbTFsZEdodlpDSTZJbkJoYzNOM2IzSmtJaXdpZEdsdFpYTjBZVzF3SWpveE56azFNVEUyTkRVM2ZWMHNJbk5sYzNOcGIyNWZhV1FpT2lJMU9UWmlPVGd3WmkwME56VXpMVFE1TVdZdE9UbGxNaTA0WkdSallqUTVNR0U0WlRNaUxDSnBjMTloYm05dWVXMXZkWE1pT21aaGJITmxmUS5jTllRazhna2xhNFQ1aGlpbGtrdjVQX3Y0OGpmR1pzWFRZeXFQMGc1VjVtRUItM2lGZ1JORkJ4SGhQQ1kxMk9fOFZKMnJ2bDA1akZFN285aDJoczJxZyIsInRva2VuX3R5cGUiOiJiZWFyZXIiLCJleHBpcmVzX2luIjozNjAwLCJleHBpcmVzX2F0IjoxNzk1MTIwMDU3LCJyZWZyZXNoX3Rva2VuIjoibGU0b3M3cGo3M3RtIiwidXNlciI6eyJjb25maXJtZWRfYXQiOiIyMDI2LTExLTE5VDE5OjIyOjI5LjQ2MDA0MloiLCJsYXN0X3NpZ25faW5fYXQiOiIyMDI2LTExLTE5VDE5OjI3OjM3LjQwNDQ5NTA2NVoiLCJ1c2VyX21ldGFkYXRhIjp7ImVtYWlsIjoiazYuanVnYWRvcjFAcmVzZXJ2YXlhLnRlc3QiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibm9tYnJlIjoiSnVnYWRvciBrNiIsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwicm9sIjoianVnYWRvciIsInN1YiI6Ijk3N2NiMmVjLWQyNzAtNDhmMC1hZWE1LTMyY2VlZGE1ZDFiNiJ9LCJpZGVudGl0aWVzIjpbeyJsYXN0X3NpZ25faW5fYXQiOiIyMDI2LTExLTE5VDE5OjIyOjI5LjQ1MTE2OFoiLCJjcmVhdGVkX2F0IjoiMjAyNi0xMS0xOVQxOToyMjoyOS40NTEyMzJaIiwidXBkYXRlZF9hdCI6IjIwMjYtMTEtMTlUMTk6MjI6MjkuNDUxMjMyWiIsImVtYWlsIjoiazYuanVnYWRvcjFAcmVzZXJ2YXlhLnRlc3QiLCJpZGVudGl0eV9pZCI6ImY4YTdlMWEzLWE0ZTgtNDhjMS05ZDk1LTk3MmFlNDU0MzI0NSIsImlkIjoiOTc3Y2IyZWMtZDI3MC00OGYwLWFlYTUtMzJjZWVkYTVkMWI2IiwidXNlcl9pZCI6Ijk3N2NiMmVjLWQyNzAtNDhmMC1hZWE1LTMyY2VlZGE1ZDFiNiIsImlkZW50aXR5X2RhdGEiOnsiZW1haWwiOiJrNi5qdWdhZG9yMUByZXNlcnZheWEudGVzdCIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwibm9tYnJlIjoiSnVnYWRvciBrNiIsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwicm9sIjoianVnYWRvciIsInN1YiI6Ijk3N2NiMmVjLWQyNzAtNDhmMC1hZWE1LTMyY2VlZGE1ZDFiNiJ9LCJwcm92aWRlciI6ImVtYWlsIn1dLCJ1cGRhdGVkX2F0IjoiMjAyNi0xMS0xOVQxOToyNzozNy40MjY3NjJaIiwiaWQiOiI5NzdjYjJlYy1kMjcwLTQ4ZjAtYWVhNS0zMmNlZWRhNWQxYjYiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZW1haWwiOiJrNi5qdWdhZG9yMUByZXNlcnZheWEudGVzdCIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJjcmVhdGVkX2F0IjoiMjAyNi0xMS0xOVQxOToyMjoyOS40MTA1NjlaIiwiaXNfYW5vbnltb3VzIjpmYWxzZSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJlbWFpbF9jb25maXJtZWRfYXQiOiIyMDI2LTExLTE5VDE5OjIyOjI5LjQ2MDA0MloiLCJwaG9uZSI6IiJ9LCJ3ZWFrX3Bhc3N3b3JkIjpudWxsfQ"
+    }
+}
