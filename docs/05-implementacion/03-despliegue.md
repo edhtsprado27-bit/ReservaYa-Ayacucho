@@ -14,7 +14,7 @@
 | **OpenRouter** | Modelos de IA gratuitos para leer comprobantes | En uso |
 | **OpenStreetMap** | Teselas del mapa (sin clave) | En uso |
 | **GitHub Actions** | Lint, tipos, pruebas con cobertura (Jest) y build en cada push (`.github/workflows/ci.yml`) | En uso |
-| **Upstash** | Redis para la caché compartida | Sprint 2 |
+| **Upstash** | Redis para la caché compartida | Pospuesto (ADR-013) |
 | **Cloudflare** | Dominio propio, DNS y CDN | Sprint 2 |
 
 ---

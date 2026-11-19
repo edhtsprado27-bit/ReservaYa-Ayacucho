@@ -11,7 +11,7 @@
 | **Respuesta esperada** | El sistema muestra las canchas y los horarios libres sin errores inesperados. |
 | **Medida** | **Propuesta por validar:** el 95 % de las consultas responde en 1,5 segundos o menos, con menos del 1 % de errores técnicos, durante una prueba con 100 usuarios simultáneos. |
 | **Verificación** | Ejecutar pruebas de rendimiento (k6 o Artillery) y registrar los tiempos de respuesta, los errores y la cantidad de usuarios simultáneos. |
-| **Estado** | Pendiente de aprobación de las medidas y definición del entorno de prueba. |
+| **Estado** | **Probado (19/11/2026, k6 contra producción): cumple.** Con 100 usuarios sin CDN: p95 171 ms (catálogo) y 494 ms (grilla), 0,02 % de errores. Hasta 2 000 usuarios desde una sola IP actúa la protección anti-DDoS de Vercel. Ver `docs/06-pruebas-y-calidad/02-pruebas-de-carga-y-analisis-bd.md`. |
 
 ## EQ-02. Consistencia: reservas simultáneas del mismo horario
 
@@ -24,7 +24,7 @@
 | **Respuesta esperada** | Solo un jugador obtiene la reserva; los demás reciben el aviso de que el horario ya no está disponible. |
 | **Medida** | En una prueba con 50 solicitudes simultáneas para el mismo horario, se crea exactamente **una** reserva y las demás reciben `409 Conflict`. |
 | **Verificación** | Ejecutar una prueba de concurrencia y revisar en la base de datos que no existan reservas cruzadas. |
-| **Estado** | Pendiente de implementar la prueba automatizada. |
+| **Estado** | **Probado (19/11/2026, k6 contra producción): cumple.** 50 pedidos simultáneos → 1 reserva creada y 49 × `409 HORARIO_OCUPADO`. Script `pruebas-carga/eq02-concurrencia.js`. |
 
 ## EQ-03. Disponibilidad: continuidad del servicio
 
@@ -50,7 +50,7 @@
 | **Respuesta esperada** | El sistema rechaza la operación, no ejecuta el cambio solicitado y no expone información sensible ni los comprobantes de otros usuarios. |
 | **Medida** | Rechazar el 100 % de los intentos no autorizados incluidos en las pruebas definidas, sin exposición de datos sensibles en las respuestas revisadas. |
 | **Verificación** | Ejecutar pruebas de acceso autorizado y no autorizado por rol, revisar las respuestas y comprobar que no se expongan datos sensibles. |
-| **Estado** | Pendiente de definir la matriz de permisos por rol. |
+| **Estado** | **Probado (19/11/2026, k6 contra producción): cumple.** 16 de 16 intentos rechazados (sin sesión y como jugador), sin datos expuestos. Script `pruebas-carga/eq04-seguridad.js`. |
 
 ## EQ-05. Mantenibilidad: cambiar el modelo de IA
 

@@ -95,7 +95,7 @@ La lista completa de códigos y mensajes está en `apps/web/src/modules/comparti
 | Memoria del servidor | Catálogo de canchas (`CatalogoEnCache`) | 30 s | Al vencer o al aprobar una cancha |
 | CDN (Vercel) | `GET /api/disponibilidad` | 5 s (y hasta 15 s viejo) | Al vencer; tras un choque la web pide sin caché |
 | Caché de Next.js (`"use cache"`) | Ficha pública del local | 1 min | Al vencer |
-| Redis (Upstash) *(Sprint 2)* | Catálogo y disponibilidad compartidos entre instancias | Por definir con las pruebas k6 | Al reservar, cancelar o aprobar |
+| ~~Redis (Upstash)~~ | Pospuesto (ADR-013): el CDN ya es la caché compartida entre instancias | — | — |
 | Sin caché (`private, no-store`) | Reservas, pagos y datos de la cuenta | — | Nunca se guardan en caché compartida |
 
 > Aunque la grilla en caché muestre libre un horario recién tomado, **la base de datos igual impide la doble reserva**: el segundo pedido recibe `409`.

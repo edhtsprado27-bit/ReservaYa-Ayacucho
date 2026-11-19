@@ -40,6 +40,6 @@ Documentar los patrones de diseño aplicados en ReservaYa Ayacucho, indicando d�
 
 | Patrón | Dónde se aplicaría | Cuándo |
 |---|---|---|
-| Decorator (Redis) | Catálogo y disponibilidad → Redis (Upstash) | Sprint 2, para compartir la caché entre las instancias de Vercel |
+| Decorator (Redis) | Catálogo y disponibilidad → Redis (Upstash) | Pospuesto (ADR-013): el CDN de Vercel ya comparte la caché entre instancias |
 | Observer | Reservas → Notificaciones | Al agregar avisos por correo o WhatsApp |
 | Strategy | Cálculo de tarifas | Si se agregan promociones o tarifas por temporada además de hora pico y normal |

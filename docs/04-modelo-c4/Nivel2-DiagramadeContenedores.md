@@ -37,7 +37,7 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 | **Autenticación** | Supabase Auth | Registro, inicio de sesión y sesión en cookies; la base sabe quién llama con `auth.uid()` | Cuentas y sesiones |
 | **Almacenamiento de archivos** | Supabase Storage (bucket privado `comprobantes`) | Guarda las capturas de Yape/Plin; solo las ven el jugador, el dueño y el admin (enlaces firmados de 15 min) | Imágenes |
 | **CDN** | Red de Vercel (dominio propio con Cloudflare en el Sprint 2) | Guarda copias de las respuestas públicas (catálogo 60 s, grilla 5 s) y los archivos estáticos | Copias temporales |
-| **Caché compartida** *(Sprint 2)* | Redis en Upstash | Compartir la caché del catálogo y la disponibilidad entre instancias del servidor | Copias temporales |
+| **Caché compartida** *(pospuesta, ADR-013)* | Redis en Upstash | Compartir la caché del catálogo y la disponibilidad entre instancias del servidor | Copias temporales |
 
 ---
 
