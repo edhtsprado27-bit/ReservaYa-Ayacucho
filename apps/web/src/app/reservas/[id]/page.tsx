@@ -7,12 +7,16 @@ import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import BotonCancelar from "@/components/reservas/BotonCancelar";
 import CuentaRegresiva from "@/components/reservas/CuentaRegresiva";
+import PagoAdelanto from "@/components/reservas/PagoAdelanto";
+import RefrescarCada from "@/components/reservas/RefrescarCada";
 import { enlaceGoogleMaps } from "@/data/canchas";
 import { obtenerPerfil } from "@/lib/auth/perfil";
 import { crearClienteServidor } from "@/lib/auth/servidor";
 import { distritoAWeb } from "@/lib/canchas-db";
 import { aErrorCatalogo } from "@/lib/catalogo-servidor";
 import { ESTADO_TEXTO, duracionTexto, rangoTexto, soles, type Reserva } from "@/lib/reservas";
+import { METODO_TEXTO, resultadoParaJugador, type EstadoPago } from "@/lib/pagos/pagos";
+import { estadoPago } from "@/lib/pagos/pagos-servidor";
 import { misReservas } from "@/lib/reservas-servidor";
 
 export const metadata: Metadata = { title: "Mi reserva · ReservaYa Ayacucho" };
@@ -22,8 +26,10 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
   if (!perfil) redirect(`/login?next=${encodeURIComponent(`/reservas/${id}`)}`);
 
   let reserva: Reserva | undefined;
+  let pago: EstadoPago | null = null;
   try {
-    [reserva] = await misReservas(await crearClienteServidor(), id);
+    const db = await crearClienteServidor();
+    [[reserva], pago] = await Promise.all([misReservas(db, id), estadoPago(db, id)]);
   } catch (e) {
     return <p className="aviso aviso--error">{aErrorCatalogo(e).message}</p>;
   }
@@ -39,7 +45,8 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
   }
 
   const r = reserva;
-  const saldo = Math.max(0, Math.round((r.total - r.adelanto) * 100) / 100);
+  const pagado = r.pagado > 0 ? r.pagado : r.adelanto;
+  const saldo = Math.max(0, Math.round((r.total - pagado) * 100) / 100);
   const telefono = r.telefono?.replace(/\D/g, "");
   const otraHora = `/cancha/${r.slug}`;
 
@@ -88,8 +95,8 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
             <strong>{soles(r.total)}</strong>
           </div>
           <div>
-            <span>Adelanto</span>
-            <strong>{soles(r.adelanto)}</strong>
+            <span>{r.pagado > 0 ? "Adelanto pagado" : "Adelanto"}</span>
+            <strong>{soles(pagado)}</strong>
           </div>
           <div>
             <span>Pagas en el local</span>
@@ -102,12 +109,45 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
         <section className="panel panel--pago" aria-label="Pago del adelanto">
           <CuentaRegresiva vence={r.vence} />
           <p>
-            El horario está apartado para ti. Paga el adelanto de <strong>{soles(r.adelanto)}</strong> antes de que
-            termine el tiempo; si no, se libera para otra persona.
+            El horario está apartado para ti. Paga el adelanto antes de que termine el tiempo; si no, se libera para
+            otra persona.
           </p>
+          <PagoAdelanto
+            reservaId={r.id}
+            adelanto={r.adelanto}
+            yape={pago?.yape ?? null}
+            plin={pago?.plin ?? null}
+            titular={pago?.titular ?? null}
+            telefonoLocal={r.telefono}
+            rechazo={pago?.pago?.estado === "rejected" ? (pago.pago.motivo ?? "sin motivo") : null}
+          />
+        </section>
+      )}
+      {r.estado === "payment_review" && (
+        <section className="panel panel--revision" aria-label="Pago en revisión">
+          <RefrescarCada segundos={20} />
+          <h2>Recibimos tu comprobante</h2>
+          {pago?.pago?.leido && (
+            <p>
+              Leímos: {pago.pago.leido.app ? `${METODO_TEXTO[pago.pago.metodo]} · ` : ""}
+              {pago.pago.leido.monto != null ? soles(pago.pago.leido.monto) : "monto no visible"}
+              {pago.pago.leido.operacion ? ` · operación ${pago.pago.leido.operacion}` : ""}
+            </p>
+          )}
+          <p>{resultadoParaJugador(pago?.pago?.resultado ?? null, pago?.pago?.leido ?? null, r.adelanto)}</p>
           <p className="meta">
-            Muy pronto podrás pagar con Yape o Plin aquí mismo. Mientras tanto, coordina el adelanto con el local
-            {r.telefono ? ` al ${r.telefono}` : ""}.
+            Tu horario sigue apartado mientras el local revisa su {pago?.pago ? METODO_TEXTO[pago.pago.metodo] : "cuenta"}.
+            Esta página se actualiza sola.
+          </p>
+        </section>
+      )}
+      {r.estado === "confirmed" && (
+        <section className="panel panel--confirmada" aria-label="Reserva confirmada">
+          <h2>¡Reserva confirmada!</h2>
+          <p>
+            Pagaste {soles(r.pagado)}
+            {pago?.pago ? ` por ${METODO_TEXTO[pago.pago.metodo]}` : ""}. El día del partido muestra tu código{" "}
+            <span className="codigo">{r.codigo}</span> y paga el resto en el local.
           </p>
         </section>
       )}

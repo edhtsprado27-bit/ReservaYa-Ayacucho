@@ -25,7 +25,7 @@ const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   FALTA_MIGRACION: {
     mensaje:
-      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 007 en el SQL Editor.",
+      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 008 en el SQL Editor.",
     status: 502,
   },
   SIN_SESION: { mensaje: "Inicia sesión para continuar.", status: 401 },
@@ -70,8 +70,26 @@ const MENSAJES: Record<string, { mensaje: string; status: number }> = {
     status: 429,
   },
   RESERVA_NO_ENCONTRADA: { mensaje: "No encontramos esa reserva en tu cuenta.", status: 404 },
-  RESERVA_VENCIDA: { mensaje: "Esta reserva ya venció y el horario se liberó.", status: 409 },
+  RESERVA_VENCIDA: {
+    mensaje: "Esta reserva ya venció y el horario se liberó. Si ya pagaste, llama al local.",
+    status: 409,
+  },
   NO_SE_PUEDE_CANCELAR: { mensaje: "Esta reserva ya no se puede cancelar.", status: 409 },
+  // Pagos (paso 6)
+  LOCAL_AJENO: {
+    mensaje: "Solo el dueño de este local o el administrador pueden cambiar sus datos de pago.",
+    status: 403,
+  },
+  CELULAR_INVALIDO: { mensaje: "El celular de Yape o Plin debe tener 9 dígitos y empezar con 9.", status: 400 },
+  FALTA_TITULAR: { mensaje: "Escribe el nombre del titular tal como aparece en Yape o Plin.", status: 400 },
+  COMPROBANTE_NO_ENCONTRADO: { mensaje: "No encontramos la captura. Vuelve a subirla.", status: 400 },
+  PAGO_YA_ENVIADO: {
+    mensaje: "Ya enviaste un comprobante para esta reserva. Espera a que el local lo revise.",
+    status: 409,
+  },
+  PAGO_NO_ENCONTRADO: { mensaje: "No encontramos ese pago entre los de tus canchas.", status: 404 },
+  PAGO_YA_REVISADO: { mensaje: "Este pago ya fue revisado. Recarga la página.", status: 409 },
+  FALTA_MOTIVO: { mensaje: "Escribe el motivo del rechazo para que el jugador sepa qué corregir.", status: 400 },
   DESCONOCIDO: { mensaje: "Ocurrió un error con la base de datos. Inténtalo de nuevo.", status: 500 },
 };
 

@@ -3,9 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
+import DatosPago from "@/components/dueno/DatosPago";
+import RevisionPagos from "@/components/dueno/RevisionPagos";
 import { obtenerPerfil } from "@/lib/auth/perfil";
 import { crearClienteServidor } from "@/lib/auth/servidor";
-import { listarPendientes } from "@/lib/catalogo-servidor";
+import { aErrorCatalogo, listarPendientes } from "@/lib/catalogo-servidor";
+import type { LocalPago, PagoPorRevisar } from "@/lib/pagos/pagos";
+import { misLocalesPago, pagosPorRevisar } from "@/lib/pagos/pagos-servidor";
 
 export const metadata: Metadata = { title: "Panel del dueño · ReservaYa Ayacucho" };
 
@@ -17,7 +21,12 @@ async function Contenido() {
   if (perfil.rol !== "dueno" && perfil.rol !== "admin") redirect("/mi-cuenta");
 
   const db = await crearClienteServidor();
-  const [pendientes, publicadas] = await Promise.all([
+  let errorPagos: string | null = null;
+  const anotar = (e: unknown) => {
+    errorPagos ??= aErrorCatalogo(e).message;
+    return [];
+  };
+  const [pendientes, publicadas, pagos, locales] = await Promise.all([
     listarPendientes(db).catch(() => []),
     db
       .from("venues")
@@ -26,6 +35,8 @@ async function Contenido() {
       .eq("status", "approved")
       .order("name")
       .then(({ data }) => (data ?? []) as unknown as Publicada[]),
+    pagosPorRevisar(db).catch(anotar) as Promise<PagoPorRevisar[]>,
+    misLocalesPago(db).catch(anotar) as Promise<LocalPago[]>,
   ]);
 
   return (
@@ -35,6 +46,17 @@ async function Contenido() {
           + Registrar una cancha
         </Link>
       </div>
+
+      <section className="panel" id="pagos" aria-labelledby="t-pagos">
+        <h2 id="t-pagos">Pagos por revisar ({pagos.length})</h2>
+        {errorPagos ? <p className="aviso aviso--error">{errorPagos}</p> : <RevisionPagos inicial={pagos} />}
+      </section>
+
+      <section className="panel" aria-labelledby="t-datos-pago">
+        <h2 id="t-datos-pago">Tu Yape y Plin</h2>
+        <p className="meta">Es la cuenta a la que los jugadores pagan el adelanto de cada reserva.</p>
+        {!errorPagos && <DatosPago locales={locales} />}
+      </section>
 
       <section className="panel" aria-labelledby="t-publicadas">
         <h2 id="t-publicadas">Publicadas ({publicadas.length})</h2>
@@ -83,7 +105,7 @@ export default function DuenoPage() {
       <main className="envoltura pagina-angosta">
         <div className="titulo">
           <h1>Panel del dueño</h1>
-          <p>Registra tus canchas y revisa su estado.</p>
+          <p>Confirma los pagos de tus reservas y registra tus canchas.</p>
         </div>
         <Suspense fallback={<p className="meta">Cargando tus canchas…</p>}>
           <Contenido />
