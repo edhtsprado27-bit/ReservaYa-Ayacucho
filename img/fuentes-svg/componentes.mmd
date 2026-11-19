@@ -1,34 +1,32 @@
 flowchart LR
     subgraph pres["Presentación"]
-        web["Aplicación web<br/>Next.js"]
-        rest["API REST<br/>Controladores NestJS"]
+        web["Páginas Next.js<br/>app/ y components/"]
+        rest["API REST<br/>app/api/**/route.ts"]
     end
     subgraph app["Aplicación"]
-        uc1["CrearReserva"]
-        uc2["RegistrarComprobante"]
-        uc3["ValidarPago"]
-        uc4["BuscarCanchas"]
-        uc5["ConsultarAsistente"]
+        uc1["reservarHorario"]
+        uc2["enviarComprobante"]
+        uc3["revisarPago"]
+        uc4["verCatalogo"]
+        uc5["registrarCancha"]
     end
     subgraph dom["Dominio"]
-        ent["Entidades<br/>Reserva · Cancha · Horario · Pago"]
-        ports["Puertos<br/>ReservaRepository · BloqueoHorarioPort<br/>ComprobanteStoragePort · IaPort"]
+        ent["Entidades y reglas<br/>Reserva · Cancha · Pago · verificar"]
+        ports["Puertos<br/>ReservasRepositorio · CatalogoRepositorio<br/>PagosRepositorio · AlmacenComprobantes · LectorComprobantes"]
     end
     subgraph infra["Infraestructura"]
-        pg["Repositorios<br/>PostgreSQL"]
-        rd["Adaptador Redis<br/>bloqueos y caché"]
-        st["Adaptador<br/>Supabase Storage"]
-        or["Adaptador<br/>OpenRouter"]
-        ml["Adaptador<br/>correo"]
+        pg["Repositorios<br/>Supabase (funciones fn_*)"]
+        ca["CatalogoEnCache<br/>(Decorator)"]
+        st["Almacén<br/>Supabase Storage"]
+        or["Lector IA<br/>OpenRouter"]
     end
 
     web --> rest --> app
     app --> dom
     pg -.->|implementa| ports
-    rd -.->|implementa| ports
+    ca -.->|implementa| ports
     st -.->|implementa| ports
     or -.->|implementa| ports
-    ml -.->|implementa| ports
 
     style pres fill:#e3f2fd,stroke:#1565c0
     style app fill:#e8f5e9,stroke:#2e7d32

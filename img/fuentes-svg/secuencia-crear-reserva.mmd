@@ -1,29 +1,26 @@
 sequenceDiagram
     autonumber
-    actor J as Jugador web
-    participant C as ReservaController
-    participant U as CrearReservaUseCase
-    participant F as FranjaHoraria
-    participant B as BloqueoHorarioPort
-    participant T as TarifaPort
-    participant R as Reserva
-    participant P as ReservaRepository
-    participant DB as PostgreSQL
+    actor J as Jugador (navegador)
+    participant R as POST /api/reservas
+    participant U as reservarHorario
+    participant V as validarPedido
+    participant P as SupabaseReservasRepositorio
+    participant DB as PostgreSQL (fn_reservar)
 
-    J->>C: POST /api/v1/reservas
-    C->>U: ejecutar(cmd)
-    U->>F: new FranjaHoraria(...) · RN-02, RN-03
-    U->>B: bloquear(canchaId, franja, 10 min)
-    alt Bloqueo obtenido
-        B-->>U: true
-        U->>T: precioPorHora(canchaId, franja)
-        T-->>U: precio
-        U->>R: crear(...) · RN-01 · PENDIENTE_PAGO
-        U->>R: total() · RN-04
-        U->>P: guardar(reserva)
-        P->>DB: INSERT (restricción EXCLUDE)
-        C-->>J: 201 Created (reservaId, total, expiraEn)
-    else Horario ocupado
-        B-->>U: false
-        C-->>J: 409 Conflict
+    J->>R: { canchaId, inicio, fin, clave } + cookie de sesión
+    R->>U: reservarHorario(reservasConSesion(db), cuerpo)
+    U->>V: validarPedido(cuerpo)
+    V-->>U: PedidoReserva
+    U->>P: reservar(pedido)
+    P->>DB: rpc fn_reservar(cancha, inicio, fin, clave)
+    Note over DB: Una transacción: libera apartados vencidos,<br/>precio turno por turno, máx. 2 por pagar,<br/>INSERT con EXCLUDE (sin cruces)
+    alt Horario libre
+        DB-->>P: reserva (pending_payment, vence en 15 min)
+        R-->>J: 201 Created (código, total, adelanto, vence)
+    else Horario tomado (incluso si llegan dos a la vez)
+        DB-->>P: error HORARIO_OCUPADO
+        R-->>J: 409 Conflict
+    else Misma clave repetida (doble clic)
+        DB-->>P: la misma reserva ya creada
+        R-->>J: 201 Created (sin duplicar)
     end

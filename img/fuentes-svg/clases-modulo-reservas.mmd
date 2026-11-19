@@ -1,86 +1,74 @@
 classDiagram
     direction TB
 
-    class ReservaController {
-        -crearReserva: CrearReservaUseCase
-        +crear(dto, req) Respuesta
+    class RutaReservas {
+        <<route.ts>>
+        +GET() Response
+        +POST(request) Response
     }
-    class CrearReservaCommand {
-        +jugadorId: string
+    class ReservasCasosDeUso {
+        <<aplicacion>>
+        +verLocal(repo, slug)
+        +verDisponibilidad(repo, localId, fecha)
+        +reservarHorario(repo, datos)
+        +verMisReservas(repo, id?)
+        +cancelarReserva(repo, id, motivo?)
+    }
+    class PedidoReserva {
         +canchaId: string
-        +fecha: string
-        +horaInicio: number
-        +horaFin: number
+        +inicio: string
+        +fin: string
+        +clave: string
     }
-    class CrearReservaUseCase {
-        -reservas: ReservaRepository
-        -bloqueo: BloqueoHorarioPort
-        -tarifas: TarifaPort
-        +ejecutar(cmd) Reserva
+    class validarPedido {
+        <<regla de dominio>>
+        +validarPedido(x) PedidoReserva
     }
     class Reserva {
         +id: string
-        +jugadorId: string
-        +canchaId: string
-        +precioPorHora: number
-        -estado: EstadoReserva
-        +expiraEn: Date
-        +crear(jugadorId, canchaId, franja, precio)$ Reserva
-        +total() number
-        +registrarComprobante() void
-        +cancelar() void
-    }
-    class FranjaHoraria {
-        +fecha: string
-        +horaInicio: number
-        +horaFin: number
-        +horas() number[]
+        +codigo: string
+        +estado: EstadoReserva
+        +inicio: string
+        +fin: string
+        +total: number
+        +adelanto: number
+        +vence: string
+        +cancelable: boolean
     }
     class EstadoReserva {
         <<enumeration>>
-        PENDIENTE_PAGO
-        EN_VERIFICACION
-        CONFIRMADA
-        RECHAZADA
-        CANCELADA
-        EXPIRADA
+        pending_payment
+        payment_review
+        confirmed
+        completed
+        no_show
+        cancelled
+        expired
     }
-    class ReservaRepository {
+    class ReservasRepositorio {
         <<interface>>
-        +guardar(reserva) void
-        +buscarPorId(id) Reserva
+        +leerLocal(slug) LocalPublico
+        +disponibilidad(localId, fecha) Turno[]
+        +reservar(pedido) ReservaCreada
+        +misReservas(id?) Reserva[]
+        +cancelar(id, motivo?) object
     }
-    class BloqueoHorarioPort {
-        <<interface>>
-        +bloquear(canchaId, franja, ms) boolean
-        +liberar(canchaId, franja) void
+    class SupabaseReservasRepositorio {
+        -db: SupabaseClient
+        +reservar(pedido) ReservaCreada
     }
-    class TarifaPort {
-        <<interface>>
-        +precioPorHora(canchaId, franja) number
-    }
-    class PostgresReservaRepository {
-        -db: Pool
-        +guardar(reserva) void
-        +buscarPorId(id) Reserva
-    }
-    class RedisBloqueoHorarioAdapter {
-        -redis: Redis
-        +bloquear(canchaId, franja, ms) boolean
-        +liberar(canchaId, franja) void
-    }
-    class HorariosTarifaAdapter {
-        +precioPorHora(canchaId, franja) number
+    class Composicion {
+        <<composicion.ts>>
+        +reservasPublicas() ReservasRepositorio
+        +reservasConSesion(db) ReservasRepositorio
     }
 
-    ReservaController ..> CrearReservaCommand : «crea»
-    ReservaController --> CrearReservaUseCase
-    CrearReservaUseCase --> ReservaRepository
-    CrearReservaUseCase --> BloqueoHorarioPort
-    CrearReservaUseCase --> TarifaPort
-    CrearReservaUseCase ..> Reserva : «crea»
-    Reserva *-- "1" FranjaHoraria
+    RutaReservas --> ReservasCasosDeUso
+    RutaReservas --> Composicion
+    ReservasCasosDeUso --> ReservasRepositorio
+    ReservasCasosDeUso ..> validarPedido
+    validarPedido ..> PedidoReserva : «crea»
+    ReservasRepositorio ..> Reserva
     Reserva --> EstadoReserva
-    PostgresReservaRepository ..|> ReservaRepository
-    RedisBloqueoHorarioAdapter ..|> BloqueoHorarioPort
-    HorariosTarifaAdapter ..|> TarifaPort
+    SupabaseReservasRepositorio ..|> ReservasRepositorio
+    Composicion ..> SupabaseReservasRepositorio : «crea»

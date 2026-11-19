@@ -2,43 +2,44 @@
 
 ## Objetivo
 
-Documentar los patrones de diseño aplicados en el backend de ReservaYa Ayacucho, indicando dónde se usan, qué problema resuelven y con qué tecnología se implementan, para que el equipo programe de forma uniforme.
+Documentar los patrones de diseño aplicados en ReservaYa Ayacucho, indicando dónde se usan, qué problema resuelven y en qué archivos están, para que el equipo programe de forma uniforme.
 
 ## Contexto
 
-- **Estilo:** monolito modular (Node.js + NestJS).
+- **Estilo:** monolito modular (Next.js 16 en Vercel).
 - **Enfoque interno:** Clean Architecture.
-- **Base:** diagrama de componentes (C4 nivel 3).
+- **Base:** diagrama de componentes (C4 nivel 3). Todas las rutas son relativas a `apps/web/src/modules/`.
 
 ## Patrones aplicados
 
 | Patrón | Dónde se usa | Problema que resuelve | Se implementa con | Archivos en el código |
 |---|---|---|---|---|
-| Adapter | Asistente IA → OpenRouter | OpenRouter tiene su propia API y el modelo puede cambiar | API REST de OpenRouter (fetch) | `ia-port.ts`, `openrouter-ia.adapter.ts` |
-| Adapter | Reservas → Redis | El negocio no debe conocer los comandos de Redis para bloquear horarios | Redis (Upstash, `ioredis`) | `bloqueo-horario.port.ts`, `redis-bloqueo-horario.adapter.ts` |
-| Adapter | Pagos → Almacenamiento de archivos | Supabase Storage tiene su propia API | SDK `@supabase/supabase-js` | `comprobante-storage.port.ts`, `supabase-storage.adapter.ts` |
-| Adapter | Canchas → Google Maps | La API de geocodificación tiene su propio formato de respuesta | Geocoding API de Google Maps (fetch) | `geocodificador.port.ts`, `google-maps-geocodificador.adapter.ts` |
-| Adapter | Notificaciones → Servicio de correo | El proveedor de correo tiene su propia API | SDK de Resend | `notificador.port.ts`, `resend-correo.adapter.ts` |
-| Repository | Todos los módulos → Base de datos | El negocio no debe conocer SQL | PostgreSQL (Prisma o TypeORM) | `reserva.repository.ts`, `postgres-reserva.repository.ts` |
-| Decorator | Horarios → Caché | Consultar la disponibilidad más rápido sin modificar el repositorio | Redis | `cached-disponibilidad.repository.ts` |
+| Repository | Catálogo, Reservas y Pagos → Base de datos | El negocio no debe conocer SQL ni las funciones de Supabase | Funciones `fn_*` de PostgreSQL vía `supabase.rpc()` | `*/dominio/*.repositorio.ts`, `catalogo/infraestructura/supabase-catalogo.repositorio.ts`, `reservas/infraestructura/supabase-reservas.repositorio.ts`, `pagos/infraestructura/supabase-pagos.repositorio.ts` |
+| Adapter | Pagos → OpenRouter (IA) | OpenRouter tiene su propia API y el modelo puede cambiar | API REST de OpenRouter (`fetch`) | `pagos/dominio/pagos.puertos.ts` (`LectorComprobantes`), `pagos/infraestructura/openrouter-lector.ts` |
+| Adapter | Pagos → Almacén de archivos | Supabase Storage tiene su propia API | SDK `@supabase/supabase-js` | `pagos/dominio/pagos.puertos.ts` (`AlmacenComprobantes`), `pagos/infraestructura/supabase-almacen-comprobantes.ts` |
+| Decorator | Catálogo → Caché | Leer las canchas publicadas más rápido sin modificar el repositorio | Caché en memoria de 30 s | `catalogo/infraestructura/catalogo-en-cache.ts` (`CatalogoEnCache` envuelve a otro `CatalogoRepositorio`) |
+| Composition Root | Cada módulo | Elegir en un solo lugar qué implementación recibe cada caso de uso | Funciones fábrica | `*/infraestructura/composicion.ts` (`catalogoPublico`, `reservasConSesion`, `pagosConSesion`) |
+| Singleton | Clientes de Supabase y catálogo público | Reutilizar una sola conexión y una sola caché por instancia | Variable de módulo | `compartido/infraestructura/supabase/cliente-publico.ts`, `catalogo/infraestructura/composicion.ts` |
 
 ## Cómo funciona cada patrón
 
 | Patrón | En pocas palabras |
 |---|---|
-| Adapter | Traduce: el sistema dice `leerComprobante(imagen)` o `bloquear(horario)` y el adaptador lo convierte en la llamada propia de OpenRouter, Redis o Supabase. |
-| Repository | El negocio dice `guardar(reserva)`; el repositorio escribe el SQL. |
-| Decorator | Busca primero la disponibilidad en Redis; si no está, consulta PostgreSQL y la guarda en Redis para la próxima vez. Al crear o cancelar una reserva, se borra esa entrada. |
+| Repository | El caso de uso dice `repo.reservar(pedido)`; el repositorio llama a `fn_reservar` en PostgreSQL. |
+| Adapter | El caso de uso dice `lector.leer(imagen)`; el adaptador lo convierte en el pedido propio de OpenRouter (con modelos de respaldo y límite de tiempo). |
+| Decorator | `CatalogoEnCache` tiene la misma interfaz que el repositorio: busca primero en memoria y, si no está o venció, consulta la base. Al aprobar una cancha borra la caché. |
+| Composition Root | Las rutas `/api` no crean repositorios a mano: piden `pagosConSesion(db)` y reciben todo listo. |
 
 ## Beneficio
 
-- Cambiar el modelo de IA, el almacenamiento, el proveedor de mapas (por ejemplo, a OpenStreetMap) o la base de datos solo afecta al adaptador o al repositorio.
-- La caché con Redis se puede activar o retirar sin tocar las reglas de negocio.
+- Cambiar el modelo de IA, el almacenamiento o la base de datos solo afecta al adaptador o al repositorio.
+- Los casos de uso se prueban con implementaciones falsas en memoria (sin red ni base de datos).
+- La caché se puede cambiar por Redis creando otro decorador, sin tocar los casos de uso.
 
 ## Patrones previstos para siguientes iteraciones
 
 | Patrón | Dónde se aplicaría | Cuándo |
 |---|---|---|
-| Observer | Reservas → Notificaciones | Al agregar más canales de aviso (WhatsApp) además del correo |
-| Strategy | Horarios → cálculo de tarifas | Si se agregan promociones o tarifas por temporada además de hora pico y normal |
-| Facade | Comunicación entre módulos | Cuando los módulos crezcan y necesiten una única puerta de entrada |
+| Decorator (Redis) | Catálogo y disponibilidad → Redis (Upstash) | Sprint 2, para compartir la caché entre las instancias de Vercel |
+| Observer | Reservas → Notificaciones | Al agregar avisos por correo o WhatsApp |
+| Strategy | Cálculo de tarifas | Si se agregan promociones o tarifas por temporada además de hora pico y normal |

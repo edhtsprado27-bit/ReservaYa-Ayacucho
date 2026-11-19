@@ -1,9 +1,9 @@
 flowchart TB
-    subgraph infra["INFRAESTRUCTURA · PostgreSQL (Supabase) · Redis (Upstash) · Supabase Storage · OpenRouter · Correo"]
-        subgraph pres["PRESENTACIÓN · Next.js (frontend) · Controladores NestJS"]
-            subgraph app["APLICACIÓN · Casos de uso: CrearReserva · RegistrarComprobante · ValidarPago · BuscarCanchas"]
-                subgraph dom["DOMINIO"]
-                    d["Entidades: Reserva · Cancha · Horario · Pago<br/>Objetos de valor: FranjaHoraria · Tarifa<br/>Puertos: ReservaRepository · BloqueoHorarioPort · IaPort"]
+    subgraph infra["INFRAESTRUCTURA · modules/*/infraestructura · Supabase (PostgreSQL, Auth, Storage) · OpenRouter · caché"]
+        subgraph pres["PRESENTACIÓN · app/ (páginas y rutas /api) · components/"]
+            subgraph app["APLICACIÓN · modules/*/aplicacion · reservarHorario · enviarComprobante · revisarPago · verCatalogo"]
+                subgraph dom["DOMINIO · modules/*/dominio"]
+                    d["Entidades: Reserva · Cancha · Pago<br/>Reglas: validarPedido · verificar comprobante · tipoDeImagen<br/>Puertos: ReservasRepositorio · PagosRepositorio · LectorComprobantes"]
                 end
             end
         end

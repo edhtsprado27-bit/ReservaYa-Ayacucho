@@ -1,32 +1,29 @@
 flowchart TB
     usuarios["Jugador · Dueño de cancha · Administrador"]
-    subgraph mono["API ReservaYa · un solo despliegue (monolito)"]
+    subgraph mono["apps/web · Next.js en Vercel · un solo despliegue (monolito modular)"]
         direction TB
         subgraph c1["Capa de presentación"]
-            p["API REST /api/v1 · JWT · validación"]
+            p["Páginas · API REST /api · componentes"]
         end
         subgraph c2["Capa de negocio (módulos)"]
-            m1["Usuarios"]
-            m2["Canchas"]
-            m3["Horarios"]
-            m4["Reservas"]
-            m5["Pagos"]
-            m6["Asistente IA"]
-            m7["Notificaciones"]
-            m8["Administración"]
+            m1["Cuentas"]
+            m2["Catálogo"]
+            m3["Reservas"]
+            m4["Pagos"]
+            m5["Compartido"]
         end
         subgraph c3["Capa de datos"]
             r["Repositorios y adaptadores"]
         end
         c1 --> c2 --> c3
     end
-    web["Aplicación web · Next.js"]
-    bd[("PostgreSQL")]
-    rd[("Redis")]
+    bd[("Supabase PostgreSQL")]
+    au[("Supabase Auth")]
     st[("Supabase Storage")]
+    ia["OpenRouter"]
 
-    usuarios --> web --> mono
-    c3 --> bd & rd & st
+    usuarios --> mono
+    c3 --> bd & au & st & ia
 
     style mono fill:#f5f5f5,stroke:#333,stroke-width:2px
     style c1 fill:#e3f2fd,stroke:#1565c0

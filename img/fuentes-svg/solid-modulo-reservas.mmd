@@ -1,9 +1,9 @@
 flowchart LR
-    S["<b>S · Responsabilidad única</b><br/>ReservaController · CrearReservaUseCase<br/>Reserva · PostgresReservaRepository"]
-    O["<b>O · Abierto/cerrado</b><br/>Nuevo adaptador de bloqueo<br/>sin tocar el caso de uso"]
-    L["<b>L · Sustitución de Liskov</b><br/>Redis y Memoria devuelven<br/>el mismo resultado"]
-    I["<b>I · Segregación de interfaces</b><br/>BloqueoHorarioPort · ReservaRepository<br/>TarifaPort"]
-    D["<b>D · Inversión de dependencias</b><br/>El caso de uso recibe interfaces<br/>reservas.module.ts las conecta"]
+    S["<b>S · Responsabilidad única</b><br/>route.ts · enviarComprobante<br/>verificar.ts · repositorio · adaptador IA"]
+    O["<b>O · Abierto/cerrado</b><br/>Otro proveedor de IA = otro adaptador<br/>sin tocar el caso de uso"]
+    L["<b>L · Sustitución de Liskov</b><br/>CatalogoEnCache y SupabaseCatalogoRepositorio<br/>cumplen el mismo contrato"]
+    I["<b>I · Segregación de interfaces</b><br/>PagosRepositorio · AlmacenComprobantes<br/>LectorComprobantes"]
+    D["<b>D · Inversión de dependencias</b><br/>enviarComprobante recibe interfaces<br/>composicion.ts las conecta"]
 
     S --> O --> L --> I --> D
 
