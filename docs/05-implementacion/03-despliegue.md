@@ -13,7 +13,7 @@
 | **Supabase** | PostgreSQL, Auth y Storage (bucket privado `comprobantes`), región São Paulo | En uso |
 | **OpenRouter** | Modelos de IA gratuitos para leer comprobantes | En uso |
 | **OpenStreetMap** | Teselas del mapa (sin clave) | En uso |
-| **GitHub Actions** | Pruebas automáticas (Jest) en cada cambio | Sprint 2 |
+| **GitHub Actions** | Lint, tipos, pruebas con cobertura (Jest) y build en cada push (`.github/workflows/ci.yml`) | En uso |
 | **Upstash** | Redis para la caché compartida | Sprint 2 |
 | **Cloudflare** | Dominio propio, DNS y CDN | Sprint 2 |
 

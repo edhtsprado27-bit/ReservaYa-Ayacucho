@@ -12,7 +12,7 @@
 | 2. Arquitectura y diseño | Markdown + Mermaid | Arquitectura, patrones, SOLID y modelo C4 (`docs/02` a `docs/04`) | Hecho; actualizado en el Sprint 2 para reflejar el código |
 | 3. Modelo de datos | SQL en Supabase | Esquema inicial y migraciones (`database/`) | Hecho |
 | 4. Desarrollo | VS Code + GitHub, Spec-Driven Development (`specs/`) | Código en `apps/web` organizado por módulos y capas | Primera versión funcional publicada (Sprint 2) |
-| 5. Pruebas | Jest, GitHub Actions, k6 | Pruebas unitarias con cobertura, CI y pruebas de carga | Sprint 2 |
+| 5. Pruebas | Jest, GitHub Actions, k6 | Pruebas unitarias e integración con cobertura y CI (`docs/06`); pruebas de carga | Jest y CI hechos; k6 en curso |
 | 6. Despliegue | Vercel, Supabase, Upstash, Cloudflare | Sistema publicado (`docs/05/03`) | Publicado en Vercel; dominio propio y Redis en el Sprint 2 |
 
 ---
@@ -27,7 +27,7 @@
 | 4 | Reservas sin cruces | HU01, HU03, HU06 | Grilla de 14 días, apartado de 15 min, `EXCLUDE`, idempotencia, cancelación (spec 005) | Hecho |
 | 5 | Pagos con IA | HU04, HU05 | Captura en Storage privado, lectura con OpenRouter, revisión del dueño (spec 006) | Hecho |
 | 6 | Arquitectura en el código | — | Módulos con Clean Architecture, puertos y adaptadores, documentos alineados | Hecho (Sprint 2) |
-| 7 | Calidad | — | Swagger, Jest + cobertura, GitHub Actions, Redis, k6 hasta 2 000 usuarios, análisis de BD y caché | Sprint 2 |
+| 7 | Calidad | — | Swagger y Jest + cobertura + GitHub Actions (spec 007, hechos); Redis, k6 hasta 2 000 usuarios y análisis de BD y caché | En curso (Sprint 2) |
 | 8 | Paneles completos y avisos | HU08, HU10 | Agenda del dueño, precios y horarios desde la web, notificaciones | Siguiente |
 
 ---

@@ -24,7 +24,7 @@
 | POST | `/api/pagos/{id}/revisar` | Dueño del local o admin | `{ accion: "confirmar" \| "rechazar", motivo? }` | `200 { ok, estadoReserva }` |
 | PUT | `/api/locales/{id}/pago` | Dueño del local o admin | Datos para cobrar: `{ yape?, plin?, titular? }` | `200 { ok, datos }` |
 
-> La documentación interactiva (OpenAPI/Swagger) se publica en `/api-docs` en el Sprint 2.
+> **Documentación interactiva:** https://reservaya-ayacucho.vercel.app/api-docs (Swagger UI). La especificación OpenAPI 3 está en `apps/web/public/openapi.yaml` y una prueba automática comprueba que describe exactamente las rutas del código.
 
 ---
 
