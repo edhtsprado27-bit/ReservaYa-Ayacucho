@@ -1,5 +1,6 @@
 # Integración continua: en cada push o pull request a main se revisa el código,
-# se ejecutan las pruebas con su cobertura y se compila la aplicación.
+# se ejecutan las pruebas con su cobertura, se compila la aplicación y, si todo
+# eso pasa, un navegador real recorre la web (pruebas E2E con Playwright).
 # Si algo falla, GitHub marca el commit con una X roja.
 name: CI
 
@@ -71,3 +72,78 @@ jobs:
 
       - name: Compilar la aplicación (Next.js)
         run: npm run build
+
+  e2e:
+    name: Pruebas E2E (Playwright)
+    needs: calidad
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    # PostgreSQL de verdad para las pruebas: se le carga el esquema y TODAS las
+    # migraciones del proyecto (npm run e2e:base). No toca la base de Supabase.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      E2E_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/reservaya_e2e
+      # La web compilada para estas pruebas habla con el Supabase de pruebas
+      # (pruebas-e2e/supabase-de-pruebas/servidor.mjs), no con el de producción
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_e2e
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar el navegador (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Crear la base de pruebas (esquema + migraciones + datos)
+        run: npm run e2e:base
+
+      - name: Compilar la web para las pruebas
+        run: npm run build
+
+      - name: Recorrer la web como jugador, dueño y administrador
+        run: npm run e2e
+
+      - name: Resumen de las pruebas E2E
+        if: always()
+        run: node pruebas-e2e/resumen-ci.mjs
+
+      - name: Guardar el informe (HTML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-e2e
+          path: apps/web/pruebas-e2e/informe/
+          retention-days: 30
+
+      - name: Guardar capturas y videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-e2e
+          path: apps/web/pruebas-e2e/resultados/
+          retention-days: 30
