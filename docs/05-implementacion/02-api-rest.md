@@ -28,6 +28,13 @@
 | PATCH | `/api/dueno/reservas/{id}` | Dueño del local o admin | `{ accion: "cobrar" \| "jugo" \| "no_vino" \| "cancelar", monto?, motivo? }` | `200 { ok, reserva }` |
 | POST | `/api/dueno/bloqueos` | Dueño del local o admin | Cierra horas de una cancha: `{ canchaId, inicio, fin, motivo? }` | `201 { ok, bloqueo }` |
 | DELETE | `/api/dueno/bloqueos/{id}` | Dueño del local o admin | Vuelve a abrir las horas bloqueadas | `200 { ok }` |
+| GET | `/api/dueno/locales/{id}` | Dueño del local o admin | Reglas de reserva, canchas, horario por día y precios | `200 { ok, config }` |
+| PUT | `/api/dueno/locales/{id}` | Dueño del local o admin | `{ direccion, referencia?, whatsapp?, adelantoPct, minutosApartado, horasCancelacion }` | `200 { ok, local }` |
+| POST | `/api/dueno/locales/{id}/canchas` | Dueño del local o admin | Agrega una cancha: `{ nombre, deporte, precio }` (08:00 a 23:00 todos los días) | `201 { ok, cancha }` |
+| PUT | `/api/dueno/canchas/{id}` | Dueño del local o admin | `{ nombre, deporte, techada, maxMinutos, horario: [{ dia, abre, cierra }], precio, precioPunta?, puntaDesde? }` | `200 { ok, cancha: { id, slug, fueraDeHorario } }` |
+| DELETE | `/api/dueno/canchas/{id}` | Dueño del local o admin | Deja de ofrecer la cancha (sin reservas pendientes y no la última) | `200 { ok }` |
+| GET | `/api/admin/locales` | Admin | Locales publicados y suspendidos con su dueño | `200 { ok, locales }` |
+| PATCH | `/api/admin/locales/{id}` | Admin | `{ accion: "asignar_dueno", correo }` \| `{ accion: "suspender", motivo }` \| `{ accion: "reactivar" }` | `200 { ok, local }` |
 
 > **Documentación interactiva:** https://reservaya-ayacucho.vercel.app/api-docs (Swagger UI). La especificación OpenAPI 3 está en `apps/web/public/openapi.yaml` y una prueba automática comprueba que describe exactamente las rutas del código.
 
@@ -64,11 +71,11 @@ Todas las rutas responden los errores con el mismo formato: `{ ok: false, codigo
 
 | Código HTTP | Cuándo | Códigos de ejemplo |
 |---|---|---|
-| 400 | Datos inválidos | `DATOS_INVALIDOS`, `DATOS_INVALIDOS_RESERVA`, `DATOS_INVALIDOS_AGENDA`, `HORARIO_PASADO`, `IMAGEN_INVALIDA`, `MONTO_INVALIDO`, `FALTA_MOTIVO` |
+| 400 | Datos inválidos | `DATOS_INVALIDOS`, `DATOS_INVALIDOS_RESERVA`, `DATOS_INVALIDOS_AGENDA`, `DATOS_INVALIDOS_LOCAL`, `HORARIO_PASADO`, `IMAGEN_INVALIDA`, `MONTO_INVALIDO`, `FALTA_MOTIVO`, `AJUSTES_INVALIDOS`, `HORARIO_ATENCION_INVALIDO`, `PRECIO_PUNTA_INVALIDO` |
 | 401 | Sin sesión | `SIN_SESION` |
 | 403 | Sin permiso | `SOLO_DUENOS`, `SOLO_ADMIN`, `LOCAL_AJENO` |
-| 404 | No existe o no es tuyo | `RESERVA_NO_ENCONTRADA`, `PROPUESTA_NO_ENCONTRADA`, `PAGO_NO_ENCONTRADO`, `BLOQUEO_NO_ENCONTRADO` |
-| 409 | Conflicto | `HORARIO_OCUPADO`, `HORARIO_CERRADO`, `PAGO_YA_ENVIADO`, `RESERVA_VENCIDA`, `LOCAL_DUPLICADO`, `ACCION_NO_PERMITIDA`, `HAY_RESERVAS`, `YA_BLOQUEADO` |
+| 404 | No existe o no es tuyo | `RESERVA_NO_ENCONTRADA`, `PROPUESTA_NO_ENCONTRADA`, `PAGO_NO_ENCONTRADO`, `BLOQUEO_NO_ENCONTRADO`, `LOCAL_NO_ENCONTRADO`, `CANCHA_NO_ENCONTRADA`, `USUARIO_NO_ENCONTRADO` |
+| 409 | Conflicto | `HORARIO_OCUPADO`, `HORARIO_CERRADO`, `PAGO_YA_ENVIADO`, `RESERVA_VENCIDA`, `LOCAL_DUPLICADO`, `ACCION_NO_PERMITIDA`, `HAY_RESERVAS`, `YA_BLOQUEADO`, `CANCHA_DUPLICADA`, `CANCHA_CON_RESERVAS`, `ULTIMA_CANCHA` |
 | 413 | Archivo muy grande | `IMAGEN_GRANDE` |
 | 429 | Demasiados pedidos | `DEMASIADAS_PENDIENTES`, `DEMASIADAS_PROPUESTAS` |
 | 500 / 502 | Falla de configuración o de Supabase | `FALTA_CONFIGURAR_SUPABASE`, `SIN_CONEXION`, `DESCONOCIDO` |
