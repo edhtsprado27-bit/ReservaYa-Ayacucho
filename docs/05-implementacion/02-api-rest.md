@@ -23,6 +23,11 @@
 | POST | `/api/reservas/{id}/pago` | Dueño de la reserva | `multipart/form-data`: `imagen` (JPG/PNG/WEBP, máx. 3 MB) y `metodo` (`yape` \| `plin`) | `201 { ok, pago, estadoPago, resultado }` |
 | POST | `/api/pagos/{id}/revisar` | Dueño del local o admin | `{ accion: "confirmar" \| "rechazar", motivo? }` | `200 { ok, estadoReserva }` |
 | PUT | `/api/locales/{id}/pago` | Dueño del local o admin | Datos para cobrar: `{ yape?, plin?, titular? }` | `200 { ok, datos }` |
+| GET | `/api/dueno/agenda?local={id}&fecha=AAAA-MM-DD` | Dueño del local o admin | Agenda del día: canchas, turnos con precio, reservas (nombre y celular del jugador) y bloqueos | `200 { ok, agenda }` |
+| POST | `/api/dueno/reservas` | Dueño del local o admin | Anota una reserva hecha por teléfono o en persona: `{ canchaId, inicio, fin, nombre, telefono?, pagado?, nota? }` (queda confirmada) | `201 { ok, reserva }` |
+| PATCH | `/api/dueno/reservas/{id}` | Dueño del local o admin | `{ accion: "cobrar" \| "jugo" \| "no_vino" \| "cancelar", monto?, motivo? }` | `200 { ok, reserva }` |
+| POST | `/api/dueno/bloqueos` | Dueño del local o admin | Cierra horas de una cancha: `{ canchaId, inicio, fin, motivo? }` | `201 { ok, bloqueo }` |
+| DELETE | `/api/dueno/bloqueos/{id}` | Dueño del local o admin | Vuelve a abrir las horas bloqueadas | `200 { ok }` |
 
 > **Documentación interactiva:** https://reservaya-ayacucho.vercel.app/api-docs (Swagger UI). La especificación OpenAPI 3 está en `apps/web/public/openapi.yaml` y una prueba automática comprueba que describe exactamente las rutas del código.
 
@@ -59,11 +64,11 @@ Todas las rutas responden los errores con el mismo formato: `{ ok: false, codigo
 
 | Código HTTP | Cuándo | Códigos de ejemplo |
 |---|---|---|
-| 400 | Datos inválidos | `DATOS_INVALIDOS`, `DATOS_INVALIDOS_RESERVA`, `HORARIO_PASADO`, `IMAGEN_INVALIDA` |
+| 400 | Datos inválidos | `DATOS_INVALIDOS`, `DATOS_INVALIDOS_RESERVA`, `DATOS_INVALIDOS_AGENDA`, `HORARIO_PASADO`, `IMAGEN_INVALIDA`, `MONTO_INVALIDO`, `FALTA_MOTIVO` |
 | 401 | Sin sesión | `SIN_SESION` |
 | 403 | Sin permiso | `SOLO_DUENOS`, `SOLO_ADMIN`, `LOCAL_AJENO` |
-| 404 | No existe o no es tuyo | `RESERVA_NO_ENCONTRADA`, `PROPUESTA_NO_ENCONTRADA`, `PAGO_NO_ENCONTRADO` |
-| 409 | Conflicto | `HORARIO_OCUPADO`, `PAGO_YA_ENVIADO`, `RESERVA_VENCIDA`, `LOCAL_DUPLICADO` |
+| 404 | No existe o no es tuyo | `RESERVA_NO_ENCONTRADA`, `PROPUESTA_NO_ENCONTRADA`, `PAGO_NO_ENCONTRADO`, `BLOQUEO_NO_ENCONTRADO` |
+| 409 | Conflicto | `HORARIO_OCUPADO`, `HORARIO_CERRADO`, `PAGO_YA_ENVIADO`, `RESERVA_VENCIDA`, `LOCAL_DUPLICADO`, `ACCION_NO_PERMITIDA`, `HAY_RESERVAS`, `YA_BLOQUEADO` |
 | 413 | Archivo muy grande | `IMAGEN_GRANDE` |
 | 429 | Demasiados pedidos | `DEMASIADAS_PENDIENTES`, `DEMASIADAS_PROPUESTAS` |
 | 500 / 502 | Falla de configuración o de Supabase | `FALTA_CONFIGURAR_SUPABASE`, `SIN_CONEXION`, `DESCONOCIDO` |
