@@ -28,7 +28,7 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   FALTA_MIGRACION: {
     mensaje:
-      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 010 en el SQL Editor.",
+      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 011 en el SQL Editor.",
     status: 502,
   },
   SIN_SESION: { mensaje: "Inicia sesión para continuar.", status: 401 },
@@ -36,7 +36,7 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
     mensaje: "Solo las cuentas de dueño o administrador pueden registrar canchas.",
     status: 403,
   },
-  SOLO_ADMIN: { mensaje: "Solo el administrador puede aprobar o rechazar canchas.", status: 403 },
+  SOLO_ADMIN: { mensaje: "Solo el administrador puede hacer esto.", status: 403 },
   DATOS_INVALIDOS: { mensaje: "Faltan datos de la cancha (nombre, distrito y ubicación).", status: 400 },
   NOMBRE_INVALIDO: { mensaje: "El nombre debe tener entre 3 y 120 caracteres.", status: 400 },
   FUERA_DE_HUAMANGA: { mensaje: "La ubicación está fuera de la provincia de Huamanga.", status: 400 },
@@ -92,7 +92,7 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   PAGO_NO_ENCONTRADO: { mensaje: "No encontramos ese pago entre los de tus canchas.", status: 404 },
   PAGO_YA_REVISADO: { mensaje: "Este pago ya fue revisado. Recarga la página.", status: 409 },
-  FALTA_MOTIVO: { mensaje: "Escribe el motivo (mínimo 3 letras): el jugador lo va a ver.", status: 400 },
+  FALTA_MOTIVO: { mensaje: "Escribe el motivo (mínimo 3 letras).", status: 400 },
   // Agenda del dueño (paso 7)
   FECHA_FUERA_DE_RANGO: { mensaje: "La agenda muestra desde 90 días atrás hasta 60 días adelante.", status: 400 },
   NOMBRE_CLIENTE_INVALIDO: { mensaje: "Escribe el nombre de quien reserva (2 a 120 letras).", status: 400 },
@@ -108,6 +108,37 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   YA_BLOQUEADO: { mensaje: "Parte de esas horas ya está bloqueada.", status: 409 },
   BLOQUEO_NO_ENCONTRADO: { mensaje: "Ese bloqueo ya no existe. Recarga la página.", status: 404 },
+  // Configuración del local y administración (paso 7B)
+  LOCAL_NO_ENCONTRADO: { mensaje: "No encontramos ese local. Recarga la página.", status: 404 },
+  DIRECCION_INVALIDA: { mensaje: "Escribe la dirección del local (5 a 200 letras).", status: 400 },
+  TELEFONO_INVALIDO: { mensaje: "El celular debe tener 9 dígitos y empezar con 9.", status: 400 },
+  AJUSTES_INVALIDOS: {
+    mensaje: "Revisa los valores: adelanto de 0 a 100 %, apartado de 10 a 60 minutos y cancelación hasta 72 horas antes.",
+    status: 400,
+  },
+  CANCHA_NO_ENCONTRADA: { mensaje: "Esa cancha ya no existe. Recarga la página.", status: 404 },
+  NOMBRE_CANCHA_INVALIDO: { mensaje: "El nombre de la cancha debe tener entre 2 y 60 letras.", status: 400 },
+  CANCHA_DUPLICADA: { mensaje: "Ya tienes una cancha con ese nombre en este local.", status: 409 },
+  HORARIO_ATENCION_INVALIDO: {
+    mensaje: "Revisa el horario: en cada día abierto, la apertura va antes del cierre y cabe al menos un turno.",
+    status: 400,
+  },
+  HORARIO_VACIO: { mensaje: "Marca al menos un día en que la cancha atiende.", status: 400 },
+  PRECIO_PUNTA_INVALIDO: {
+    mensaje: "Para la hora punta indica el precio (S/ 1 a S/ 1000) y desde qué hora rige.",
+    status: 400,
+  },
+  DEMASIADAS_CANCHAS: { mensaje: "Un local puede tener hasta 10 canchas.", status: 409 },
+  CANCHA_CON_RESERVAS: {
+    mensaje: "Esta cancha tiene reservas pendientes. Cancélalas en la agenda antes de quitarla.",
+    status: 409,
+  },
+  ULTIMA_CANCHA: { mensaje: "El local necesita al menos una cancha. Agrega otra antes de quitar esta.", status: 409 },
+  USUARIO_NO_ENCONTRADO: {
+    mensaje: "No hay una cuenta con ese correo. La persona primero debe registrarse en ReservaYa.",
+    status: 404,
+  },
+  CORREO_ES_ADMIN: { mensaje: "Esa cuenta es de administrador: ya puede ver todos los locales.", status: 400 },
   DESCONOCIDO: { mensaje: "Ocurrió un error con la base de datos. Inténtalo de nuevo.", status: 500 },
 };
 

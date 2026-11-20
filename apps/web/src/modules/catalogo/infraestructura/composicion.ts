@@ -16,6 +16,11 @@ export function catalogoPublico(): CatalogoEnCache {
   return publico;
 }
 
+/** Borra la copia en memoria del catálogo (otro módulo cambió precios, canchas o el estado de un local) */
+export function olvidarCatalogoPublico() {
+  publico?.invalidar();
+}
+
 /** Catálogo con la sesión de quien pide (registrar, editar, aprobar) */
 export function catalogoConSesion(db: SupabaseClient): CatalogoRepositorio {
   return new CatalogoConSesion(new SupabaseCatalogoRepositorio(db));

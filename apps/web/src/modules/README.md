@@ -7,6 +7,8 @@
 | `catalogo` | Canchas publicadas (con caché), registro y aprobación |
 | `reservas` | Grilla de horarios, reservar, mis reservas y cancelar |
 | `pagos` | Comprobante de Yape/Plin, lectura con IA y revisión del dueño |
+| `agenda` | Agenda del dueño: reservas del día, reservas por teléfono, cobros en efectivo y bloqueos |
+| `locales` | Configuración del local (reglas de reserva, canchas, horario y precios) y control del admin (dueño real, suspender) |
 
 Cada módulo tiene las mismas capas:
 

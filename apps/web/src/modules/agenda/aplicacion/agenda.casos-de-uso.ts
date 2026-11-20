@@ -14,9 +14,12 @@ import {
   validarReservaManual,
 } from "../dominio/pedidos-agenda";
 
-/** Locales del dueño que ya están publicados (los únicos que reciben reservas) */
+/**
+ * Locales con agenda: los publicados y también los suspendidos (no reciben
+ * reservas nuevas, pero el dueño debe atender o cancelar las que ya tenía)
+ */
 export async function verLocalesConAgenda(repo: AgendaRepositorio) {
-  return (await repo.misLocales()).filter((l) => l.estado === "approved");
+  return (await repo.misLocales()).filter((l) => l.estado === "approved" || l.estado === "suspended");
 }
 
 /** Agenda de un día (RF: el dueño ve sus reservas) */

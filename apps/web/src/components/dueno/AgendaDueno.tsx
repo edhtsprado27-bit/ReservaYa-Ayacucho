@@ -25,6 +25,7 @@ import {
   type TurnoAgenda,
 } from "@/modules/agenda/dominio/agenda";
 import type { LocalDelDueno } from "@/modules/agenda/dominio/agenda.repositorio";
+import { llamarApi, type RespuestaApi } from "@/modules/compartido/presentacion/llamar-api";
 import { ESTADO_TEXTO } from "@/modules/reservas/dominio/reserva";
 import { fechaLarga, horaLima, minutosTexto, soles, sumarDias } from "@/modules/reservas/dominio/tiempo";
 
@@ -47,16 +48,7 @@ const minutoActual = () => Math.floor(Date.now() / 60_000) * 60_000;
 const MOTIVOS_BLOQUEO = ["Mantenimiento", "Torneo", "Evento privado"];
 const MOTIVOS_CANCELAR = ["Lluvia", "Mantenimiento", "El jugador avisó que no viene"];
 
-async function llamar(url: string, metodo: string, cuerpo?: unknown): Promise<{ ok: boolean; error?: string }> {
-  const res = await fetch(url, {
-    method: metodo,
-    headers: cuerpo === undefined ? undefined : { "Content-Type": "application/json" },
-    body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
-  }).catch(() => null);
-  const json = await res?.json().catch(() => null);
-  if (res?.ok && json?.ok) return { ok: true };
-  return { ok: false, error: json?.error ?? "Sin conexión con el servidor. Inténtalo otra vez." };
-}
+const llamar = llamarApi;
 
 export default function AgendaDueno({ agenda, locales, hoy, canchaInicial }: Props) {
   const router = useRouter();
@@ -84,13 +76,13 @@ export default function AgendaDueno({ agenda, locales, hoy, canchaInicial }: Pro
     router.push(`/dueno/agenda?${q}`);
   };
 
-  async function hacer(accion: () => Promise<{ ok: boolean; error?: string }>, exito: string) {
+  async function hacer(accion: () => Promise<RespuestaApi>, exito: string) {
     setEnviando(true);
     setAviso(null);
     const r = await accion();
     setEnviando(false);
     if (!r.ok) {
-      setAviso({ error: true, texto: r.error ?? "No se pudo guardar." });
+      setAviso({ error: true, texto: r.error });
       return;
     }
     setAbierto(null);
@@ -144,6 +136,13 @@ export default function AgendaDueno({ agenda, locales, hoy, canchaInicial }: Pro
           />
         </div>
       </div>
+
+      {agenda.local.estado === "suspended" && (
+        <p className="aviso aviso--error">
+          El administrador suspendió este local: no aparece en el mapa ni recibe reservas nuevas. Atiende o cancela
+          las reservas que ya tenías. <Link href={`/dueno/configuracion?local=${agenda.local.id}`}>Ver el motivo</Link>
+        </p>
+      )}
 
       <h2 className="agenda-fecha">
         {fechaLarga(`${agenda.fecha}T12:00:00-05:00`)}
@@ -256,7 +255,7 @@ type FilaLibreProps = {
   canchaId: string;
   minutosTurno: number;
   ahora: number;
-  hacer: (a: () => Promise<{ ok: boolean; error?: string }>, exito: string) => Promise<void>;
+  hacer: (a: () => Promise<RespuestaApi>, exito: string) => Promise<void>;
 };
 
 function FilaLibre(p: FilaLibreProps) {

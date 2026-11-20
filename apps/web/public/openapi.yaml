@@ -32,6 +32,10 @@ tags:
     description: Adelanto por Yape/Plin, lectura con IA y revisión del dueño (módulo pagos)
   - name: Dueño
     description: Agenda del día, reservas anotadas por el local, cobros en efectivo y bloqueos (módulo agenda)
+  - name: Configuración del local
+    description: Reglas de reserva, canchas, horario de atención y precios (módulo locales)
+  - name: Administración
+    description: Locales publicados, asignar el dueño real, suspender y reactivar (módulo locales, solo admin)
 
 paths:
   /api/canchas:
@@ -166,6 +170,71 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
+    patch:
+      tags: [Administración]
+      summary: Asignar el dueño real, suspender o reactivar un local
+      description: |
+        - `asignar_dueno`: la persona debe tener cuenta en ReservaYa con ese correo; si era jugador, pasa a ser dueño.
+        - `suspender`: sale del mapa y no recibe reservas nuevas (`motivo` obligatorio, lo ve el dueño).
+          Las reservas que ya tenía siguen en pie.
+        - `reactivar`: vuelve a publicarse.
+        Cada cambio queda en `audit_logs`.
+      operationId: gestionarLocal
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion]
+              properties:
+                accion: { type: string, enum: [asignar_dueno, suspender, reactivar] }
+                correo: { type: string, format: email, description: "Obligatorio al asignar dueño" }
+                motivo: { type: string, minLength: 3, maxLength: 300, description: "Obligatorio al suspender" }
+      responses:
+        "200":
+          description: Hecho
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  local:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      slug: { type: string }
+                      estado: { type: string, enum: [approved, suspended] }
+                      dueno: { type: string, description: "Al asignar dueño" }
+                      correo: { type: string, description: "Al asignar dueño" }
+                      ahoraEsDueno: { type: boolean, description: "true si la cuenta era de jugador" }
+                      reservasFuturas: { type: integer, description: "Al suspender o reactivar" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/admin/locales:
+    get:
+      tags: [Administración]
+      summary: Locales publicados y suspendidos con su dueño (solo admin)
+      operationId: listarLocalesAdmin
+      security: [{ sesion: [] }]
+      responses:
+        "200":
+          description: Lista de locales
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  locales:
+                    type: array
+                    items: { $ref: "#/components/schemas/LocalAdmin" }
+        "403": { $ref: "#/components/responses/Error" }
 
   /api/disponibilidad:
     get:
@@ -561,6 +630,166 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
 
+  /api/dueno/locales/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Configuración del local]
+      summary: Reglas de reserva, canchas, horario y precios de un local (dueño del local o admin)
+      operationId: verConfiguracionLocal
+      security: [{ sesion: [] }]
+      responses:
+        "200":
+          description: Configuración
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  config: { $ref: "#/components/schemas/ConfigLocal" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [Configuración del local]
+      summary: Guardar las reglas de reserva y el contacto del local
+      description: Las reservas nuevas usan los valores nuevos; la ficha pública y el mapa se renuevan al instante.
+      operationId: guardarAjustesLocal
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [direccion, adelantoPct, minutosApartado, horasCancelacion]
+              properties:
+                direccion: { type: string, minLength: 5, maxLength: 200, example: "Jr. Lima 123" }
+                referencia: { type: string, maxLength: 200 }
+                whatsapp: { type: string, example: "966123456" }
+                adelantoPct: { type: integer, minimum: 0, maximum: 100, example: 50 }
+                minutosApartado: { type: integer, minimum: 10, maximum: 60, example: 15 }
+                horasCancelacion: { type: integer, minimum: 0, maximum: 72, example: 6 }
+      responses:
+        "200":
+          description: Guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  local: { $ref: "#/components/schemas/Cambio" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /api/dueno/locales/{id}/canchas:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Configuración del local]
+      summary: Agregar una cancha al local
+      description: Empieza con horario de 08:00 a 23:00 todos los días. Máximo 10 canchas por local.
+      operationId: agregarCancha
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, deporte, precio]
+              properties:
+                nombre: { type: string, minLength: 2, maxLength: 60, example: "Cancha 2" }
+                deporte: { type: string, enum: [futbol, futsal, voley] }
+                precio: { type: number, minimum: 1, maximum: 1000, example: 60 }
+      responses:
+        "201":
+          description: Agregada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  cancha: { $ref: "#/components/schemas/Cambio" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/dueno/canchas/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: [Configuración del local]
+      summary: Guardar nombre, deporte, horario por día y precios de una cancha
+      description: |
+        Los días que no vienen en `horario` quedan cerrados (`dia`: 0 = domingo … 6 = sábado; horas en punto o y media,
+        `cierra` hasta `24:00`). Si cambian los precios, las reglas anteriores se desactivan (las reservas antiguas
+        las siguen citando) y se crean "Normal" y "Hora punta" (desde `puntaDesde` hasta el cierre).
+        Las reservas que quedan fuera del nuevo horario siguen en pie: se informan en `fueraDeHorario`.
+      operationId: guardarCancha
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, deporte, maxMinutos, horario, precio]
+              properties:
+                nombre: { type: string, minLength: 2, maxLength: 60 }
+                deporte: { type: string, enum: [futbol, futsal, voley] }
+                techada: { type: boolean }
+                maxMinutos: { type: integer, example: 180, description: "Múltiplo del turno, hasta 240" }
+                horario:
+                  type: array
+                  maxItems: 7
+                  items:
+                    type: object
+                    required: [dia, abre, cierra]
+                    properties:
+                      dia: { type: integer, minimum: 0, maximum: 6 }
+                      abre: { type: string, example: "08:00" }
+                      cierra: { type: string, example: "23:00" }
+                precio: { type: number, minimum: 1, maximum: 1000, example: 60 }
+                precioPunta: { type: number, nullable: true, example: 80 }
+                puntaDesde: { type: string, nullable: true, example: "18:00" }
+      responses:
+        "200":
+          description: Guardada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  cancha:
+                    allOf:
+                      - $ref: "#/components/schemas/Cambio"
+                      - type: object
+                        properties:
+                          fueraDeHorario: { type: integer, example: 0 }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [Configuración del local]
+      summary: Dejar de ofrecer una cancha
+      description: Solo si no tiene reservas pendientes (`409 CANCHA_CON_RESERVAS`) y no es la última del local (`409 ULTIMA_CANCHA`).
+      operationId: quitarCancha
+      security: [{ sesion: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
 components:
   securitySchemes:
     sesion:
@@ -774,3 +1003,66 @@ components:
               inicio: { type: string, format: date-time }
               fin: { type: string, format: date-time }
               motivo: { type: string, nullable: true }
+
+    Cambio:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string, description: Slug del local (su ficha pública se renueva) }
+
+    ConfigLocal:
+      type: object
+      properties:
+        local:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            nombre: { type: string }
+            slug: { type: string }
+            distrito: { type: string }
+            estado: { type: string, enum: [approved, pending_review, suspended] }
+            motivoEstado: { type: string, nullable: true, description: Motivo de la suspensión }
+            direccion: { type: string }
+            referencia: { type: string, nullable: true }
+            whatsapp: { type: string, nullable: true }
+            adelantoPct: { type: integer }
+            minutosApartado: { type: integer }
+            horasCancelacion: { type: integer }
+        canchas:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              nombre: { type: string }
+              deporte: { type: string }
+              techada: { type: boolean }
+              minutosTurno: { type: integer }
+              maxMinutos: { type: integer }
+              horario:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    dia: { type: integer }
+                    abre: { type: string }
+                    cierra: { type: string }
+              precio: { type: number, nullable: true }
+              precioPunta: { type: number, nullable: true }
+              puntaDesde: { type: string, nullable: true }
+              reservasFuturas: { type: integer }
+
+    LocalAdmin:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        slug: { type: string }
+        distrito: { type: string }
+        estado: { type: string, enum: [approved, suspended] }
+        motivo: { type: string, nullable: true }
+        sinDueno: { type: boolean, description: "true si todavía lo administra la plataforma" }
+        duenoNombre: { type: string, nullable: true }
+        duenoCorreo: { type: string, nullable: true }
+        canchas: { type: integer }
+        reservasFuturas: { type: integer }

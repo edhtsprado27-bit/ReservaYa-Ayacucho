@@ -42,6 +42,9 @@ async function Contenido() {
         <Link className="boton boton--naranja" href="/dueno/agenda">
           Agenda de reservas
         </Link>
+        <Link className="boton boton--claro" href="/dueno/configuracion">
+          Configurar mi local
+        </Link>
         <Link className="boton boton--claro" href="/?agregar=1">
           + Registrar una cancha
         </Link>
@@ -105,7 +108,7 @@ export default function DuenoPage() {
       <main className="envoltura pagina-angosta">
         <div className="titulo">
           <h1>Panel del dueño</h1>
-          <p>Mira tu agenda, confirma los pagos de tus reservas y registra tus canchas.</p>
+          <p>Mira tu agenda, confirma los pagos, configura precios y horarios, y registra tus canchas.</p>
         </div>
         <Suspense fallback={<p className="meta">Cargando tus canchas…</p>}>
           <Contenido />
