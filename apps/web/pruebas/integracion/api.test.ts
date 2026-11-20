@@ -38,6 +38,11 @@ function cargar() {
     pago: require("@/app/api/reservas/[id]/pago/route"),
     revisar: require("@/app/api/pagos/[id]/revisar/route"),
     datosPago: require("@/app/api/locales/[id]/pago/route"),
+    agenda: require("@/app/api/dueno/agenda/route"),
+    manual: require("@/app/api/dueno/reservas/route"),
+    gestionar: require("@/app/api/dueno/reservas/[id]/route"),
+    bloqueos: require("@/app/api/dueno/bloqueos/route"),
+    bloqueoId: require("@/app/api/dueno/bloqueos/[id]/route"),
     docs: require("@/app/api-docs/route"),
   };
 }
@@ -244,6 +249,100 @@ describe("pagos", () => {
     const { datosPago } = preparar({ fn_guardar_datos_pago: { data: { yape: "966123456", plin: null, titular: "Juan" } } });
     const res = await datosPago.PUT(json(`/api/locales/${ID_LOCAL}/pago`, "PUT", { yape: "966123456", titular: "Juan" }), ctx(ID_LOCAL));
     expect(await res.json()).toEqual({ ok: true, datos: { yape: "966123456", plin: null, titular: "Juan" } });
+  });
+});
+
+describe("agenda del dueño", () => {
+  const agendaDeLaBase = {
+    local: { id: ID_LOCAL, nombre: "La Bombonera", slug: "la-bombonera", estado: "approved", adelanto_pct: 50 },
+    fecha: "2026-12-01",
+    ahora: "2026-12-01T22:00:00+00:00",
+    canchas: [],
+    reservas: [],
+    bloqueos: [],
+  };
+  const turno = { canchaId: ID_CANCHA, inicio: "2026-12-01T19:00:00-05:00", fin: "2026-12-01T21:00:00-05:00" };
+
+  it("GET /api/dueno/agenda devuelve el día sin caché", async () => {
+    const { NextRequest } = jest.requireActual("next/server");
+    const { agenda } = preparar({ fn_agenda_local: { data: agendaDeLaBase } });
+    const res = await agenda.GET(new NextRequest(`http://localhost/api/dueno/agenda?local=${ID_LOCAL}&fecha=2026-12-01`));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect((await res.json()).agenda.local).toEqual(expect.objectContaining({ nombre: "La Bombonera", adelantoPct: 50 }));
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_agenda_local", { p_local: ID_LOCAL, p_fecha: "2026-12-01" });
+  });
+
+  it("GET /api/dueno/agenda: parámetros inválidos (400) y local ajeno (403)", async () => {
+    const { NextRequest } = jest.requireActual("next/server");
+    const { agenda } = preparar({ fn_agenda_local: { error: { code: "P0001", message: "LOCAL_AJENO" } } });
+    expect((await agenda.GET(new NextRequest("http://localhost/api/dueno/agenda?local=x"))).status).toBe(400);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+    const res = await agenda.GET(new NextRequest(`http://localhost/api/dueno/agenda?local=${ID_LOCAL}&fecha=2026-12-01`));
+    expect(res.status).toBe(403);
+    expect((await res.json()).codigo).toBe("LOCAL_AJENO");
+  });
+
+  it("POST /api/dueno/reservas anota una reserva confirmada (201)", async () => {
+    const { manual } = preparar({ fn_reserva_manual: { data: { id: ID_RESERVA, codigo: "RY-7K2M9P", total: 140, pagado: 30, estado: "confirmed" } } });
+    const res = await manual.POST(json("/api/dueno/reservas", "POST", { ...turno, nombre: "Carlos", telefono: "966123456", pagado: 30 }));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true, reserva: { id: ID_RESERVA, codigo: "RY-7K2M9P", total: 140, pagado: 30, estado: "confirmed" } });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_reserva_manual", expect.objectContaining({ p_nombre: "Carlos", p_pagado: 30, p_inicio: "2026-12-02T00:00:00.000Z" }));
+  });
+
+  it.each([
+    ["HORARIO_OCUPADO", 409, "HORARIO_OCUPADO"],
+    ["COURT_BLACKOUT", 409, "HORARIO_CERRADO"],
+    ["NOMBRE_CLIENTE_INVALIDO", 400, "NOMBRE_CLIENTE_INVALIDO"],
+    ["MONTO_INVALIDO", 400, "MONTO_INVALIDO"],
+  ])("POST /api/dueno/reservas: si la base responde %s -> %i %s", async (mensaje, status, codigo) => {
+    const { manual } = preparar({ fn_reserva_manual: { error: { code: "P0001", message: mensaje } } });
+    const res = await manual.POST(json("/api/dueno/reservas", "POST", { ...turno, nombre: "Carlos" }));
+    expect(res.status).toBe(status);
+    expect(await res.json()).toEqual({ ok: false, codigo, error: expect.any(String) });
+  });
+
+  it("POST /api/dueno/reservas: un cuerpo inválido no llega a la base", async () => {
+    const { manual } = preparar();
+    expect((await manual.POST(json("/api/dueno/reservas", "POST", "esto no es json"))).status).toBe(400);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("PATCH /api/dueno/reservas/{id} cobra, marca y cancela", async () => {
+    const { gestionar } = preparar({ fn_gestionar_reserva: { data: { id: ID_RESERVA, estado: "confirmed", pagado: 140, total: 140 } } });
+    const res = await gestionar.PATCH(json(`/api/dueno/reservas/${ID_RESERVA}`, "PATCH", { accion: "cobrar", monto: 70 }), ctx(ID_RESERVA));
+    expect(await res.json()).toEqual({ ok: true, reserva: { id: ID_RESERVA, estado: "confirmed", pagado: 140, total: 140 } });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_gestionar_reserva", { p_reserva: ID_RESERVA, p_accion: "cobrar", p_monto: 70, p_motivo: null });
+    expect((await gestionar.PATCH(json(`/api/dueno/reservas/${ID_RESERVA}`, "PATCH", { accion: "borrar" }), ctx(ID_RESERVA))).status).toBe(400);
+    expect((await gestionar.PATCH(json("/api/dueno/reservas/x", "PATCH", { accion: "jugo" }), ctx("x"))).status).toBe(400);
+  });
+
+  it("PATCH /api/dueno/reservas/{id}: cancelar sin motivo o antes de tiempo", async () => {
+    const { gestionar } = preparar({ fn_gestionar_reserva: { error: { code: "P0001", message: "FALTA_MOTIVO" } } });
+    const res = await gestionar.PATCH(json(`/api/dueno/reservas/${ID_RESERVA}`, "PATCH", { accion: "cancelar" }), ctx(ID_RESERVA));
+    expect(res.status).toBe(400);
+    expect((await res.json()).codigo).toBe("FALTA_MOTIVO");
+  });
+
+  it("POST /api/dueno/bloqueos cierra horas (201) y avisa si hay reservas (409)", async () => {
+    const { bloqueos } = preparar({ fn_bloquear_horario: { data: { id: 12 } } });
+    const res = await bloqueos.POST(json("/api/dueno/bloqueos", "POST", { ...turno, motivo: "Torneo" }));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true, bloqueo: { id: 12 } });
+
+    const otra = preparar({ fn_bloquear_horario: { error: { code: "P0001", message: "HAY_RESERVAS" } } });
+    const conflicto = await otra.bloqueos.POST(json("/api/dueno/bloqueos", "POST", turno));
+    expect(conflicto.status).toBe(409);
+    expect((await conflicto.json()).codigo).toBe("HAY_RESERVAS");
+  });
+
+  it("DELETE /api/dueno/bloqueos/{id}", async () => {
+    const { bloqueoId } = preparar({ fn_quitar_bloqueo: { data: null } });
+    const res = await bloqueoId.DELETE(json("/api/dueno/bloqueos/12", "DELETE"), ctx("12"));
+    expect(await res.json()).toEqual({ ok: true });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_quitar_bloqueo", { p_bloqueo: 12 });
+    expect((await bloqueoId.DELETE(json("/api/dueno/bloqueos/abc", "DELETE"), ctx("abc"))).status).toBe(400);
   });
 });
 

@@ -37,7 +37,7 @@ describe("OpenAPI", () => {
 
   it("documenta todas las rutas del código y ninguna que no exista", () => {
     expect(rutasDocumentadas.sort()).toEqual(rutasDelCodigo(API).sort());
-    expect(rutasDocumentadas).toHaveLength(13);
+    expect(rutasDocumentadas).toHaveLength(18);
   });
 
   it("cada operación tiene un operationId y respuestas", () => {
