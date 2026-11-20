@@ -44,3 +44,9 @@ next-env.d.ts
 
 # caché de SWC que crea Jest (next/jest)
 /.swc/
+
+# pruebas E2E (sesiones guardadas, capturas, videos e informe)
+/pruebas-e2e/.sesiones/
+/pruebas-e2e/resultados/
+/pruebas-e2e/informe/
+/pruebas-e2e/resumen-e2e.json
