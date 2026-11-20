@@ -28,7 +28,7 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   FALTA_MIGRACION: {
     mensaje:
-      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 008 en el SQL Editor.",
+      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 010 en el SQL Editor.",
     status: 502,
   },
   SIN_SESION: { mensaje: "Inicia sesión para continuar.", status: 401 },
@@ -80,7 +80,7 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   NO_SE_PUEDE_CANCELAR: { mensaje: "Esta reserva ya no se puede cancelar.", status: 409 },
   // Pagos
   LOCAL_AJENO: {
-    mensaje: "Solo el dueño de este local o el administrador pueden cambiar sus datos de pago.",
+    mensaje: "Solo el dueño de este local o el administrador pueden hacer esto.",
     status: 403,
   },
   CELULAR_INVALIDO: { mensaje: "El celular de Yape o Plin debe tener 9 dígitos y empezar con 9.", status: 400 },
@@ -92,7 +92,22 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   PAGO_NO_ENCONTRADO: { mensaje: "No encontramos ese pago entre los de tus canchas.", status: 404 },
   PAGO_YA_REVISADO: { mensaje: "Este pago ya fue revisado. Recarga la página.", status: 409 },
-  FALTA_MOTIVO: { mensaje: "Escribe el motivo del rechazo para que el jugador sepa qué corregir.", status: 400 },
+  FALTA_MOTIVO: { mensaje: "Escribe el motivo (mínimo 3 letras): el jugador lo va a ver.", status: 400 },
+  // Agenda del dueño (paso 7)
+  FECHA_FUERA_DE_RANGO: { mensaje: "La agenda muestra desde 90 días atrás hasta 60 días adelante.", status: 400 },
+  NOMBRE_CLIENTE_INVALIDO: { mensaje: "Escribe el nombre de quien reserva (2 a 120 letras).", status: 400 },
+  MONTO_INVALIDO: { mensaje: "El monto no puede ser mayor que lo que falta pagar.", status: 400 },
+  ACCION_INVALIDA: { mensaje: "Esa acción no existe.", status: 400 },
+  ACCION_NO_PERMITIDA: {
+    mensaje: "Esa acción no se puede hacer con esta reserva ahora (revisa la hora y su estado).",
+    status: 409,
+  },
+  HAY_RESERVAS: {
+    mensaje: "Hay reservas en esas horas. Cancélalas primero para que los jugadores reciban el aviso.",
+    status: 409,
+  },
+  YA_BLOQUEADO: { mensaje: "Parte de esas horas ya está bloqueada.", status: 409 },
+  BLOQUEO_NO_ENCONTRADO: { mensaje: "Ese bloqueo ya no existe. Recarga la página.", status: 404 },
   DESCONOCIDO: { mensaje: "Ocurrió un error con la base de datos. Inténtalo de nuevo.", status: 500 },
 };
 

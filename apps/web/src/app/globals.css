@@ -242,3 +242,40 @@ a.boton { display: inline-flex; align-items: center; justify-content: center; te
 .form-pago-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .form-pago label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 14px; }
 .form-pago .campo { flex: none; min-height: 44px; }
+
+/* Agenda del dueño (paso 7) */
+.aviso--ok { background: #effaf3; color: #17603a; }
+.boton--chico { min-height: 38px; padding: 0 12px; font-size: 14px; }
+.agenda { display: flex; flex-direction: column; gap: 14px; }
+.agenda-barra { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px; }
+.agenda-local-nombre { margin: 0; align-self: center; font-family: var(--fuente-titulo), sans-serif; font-size: 22px; font-weight: 800; }
+.agenda-local { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 14px; min-width: 200px; }
+.agenda-dias { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.agenda-dias .boton[aria-pressed="true"] { border-color: var(--naranja); color: var(--naranja-texto); }
+.agenda-dias input[type="date"] { flex: none; width: auto; min-height: 44px; }
+.agenda-fecha { margin: 0; font-family: var(--fuente-titulo), sans-serif; font-size: 26px; }
+.agenda-resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.agenda-resumen div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: var(--superficie); border: 1px solid var(--linea); }
+.agenda-resumen span { font-size: 13px; color: var(--tenue); font-weight: 600; }
+.agenda-resumen strong { font-size: 20px; }
+@media (max-width: 520px) { .agenda-resumen { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.agenda-filas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fila-agenda { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--linea); border-left-width: 5px; border-radius: 12px; background: var(--superficie); }
+.fila-agenda-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.fila-hora { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 112px; }
+.fila-acciones { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.fila-agenda--libre { border-left-color: #cfd8cc; }
+.fila-agenda--pasado { opacity: .6; }
+.fila-agenda--bloqueo { border-left-color: #8a94a3; background: repeating-linear-gradient(135deg, #eef1ee 0 8px, #f7f8f6 8px 16px); }
+.fila-agenda--reserva { border-left-color: var(--naranja); }
+.fila-agenda--confirmed { border-left-color: #2f9e5b; }
+.fila-agenda--completed { border-left-color: #2f9e5b; opacity: .85; }
+.fila-agenda--no_show { border-left-color: #b42318; opacity: .85; }
+.fila-agenda--payment_review { border-left-color: #2e6fd1; }
+.fila-agenda .estado { margin-left: auto; }
+.fila-reserva-datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fila-reserva-datos a { color: var(--naranja-texto); font-weight: 700; }
+.form-agenda { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; padding: 12px; border: 1px solid #f3d3b5; border-radius: 10px; background: #fff8f1; }
+.form-agenda label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 14px; }
+.form-agenda .campo { flex: none; min-height: 44px; }
+.form-agenda-ancho { grid-column: 1 / -1; margin: 0; }

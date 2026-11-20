@@ -72,6 +72,8 @@ export type Reserva = {
   telefono: string | null;
   horasCancelacion: number;
   cancelable: boolean; // activa y todavía no empieza (lo decide la base)
+  canceladaPorLocal: boolean; // la canceló el dueño del local (no el jugador)
+  motivoCancelacion: string | null; // motivo que escribió el local
 };
 
 // Lo que devuelve la base al reservar (y al pedir otra vez con la misma clave)

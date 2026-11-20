@@ -69,6 +69,8 @@ export function aReserva(f: Json): Reserva {
     telefono: txt(f.telefono),
     horasCancelacion: Number(f.horas_cancelacion ?? 6),
     cancelable: Boolean(f.cancelable),
+    canceladaPorLocal: Boolean(f.cancelada_por_local),
+    motivoCancelacion: txt(f.motivo_cancelacion),
   };
 }
 

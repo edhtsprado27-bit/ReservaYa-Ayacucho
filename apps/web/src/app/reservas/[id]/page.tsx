@@ -162,7 +162,10 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
       )}
       {r.estado === "cancelled" && (
         <p className="aviso">
-          Cancelaste esta reserva. <Link href={otraHora}>Reservar otra hora</Link>
+          {r.canceladaPorLocal
+            ? `El local canceló esta reserva${r.motivoCancelacion ? `: “${r.motivoCancelacion}”` : ""}. Si ya pagaste, coordina la devolución con el local.`
+            : "Cancelaste esta reserva."}{" "}
+          <Link href={otraHora}>Reservar otra hora</Link>
         </p>
       )}
 

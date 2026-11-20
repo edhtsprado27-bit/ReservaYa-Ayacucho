@@ -30,6 +30,8 @@ tags:
     description: Grilla de horarios, reservar, mis reservas y cancelar (módulo reservas)
   - name: Pagos
     description: Adelanto por Yape/Plin, lectura con IA y revisión del dueño (módulo pagos)
+  - name: Dueño
+    description: Agenda del día, reservas anotadas por el local, cobros en efectivo y bloqueos (módulo agenda)
 
 paths:
   /api/canchas:
@@ -385,6 +387,180 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
 
+  /api/dueno/agenda:
+    get:
+      tags: [Dueño]
+      summary: Agenda de un día de un local (dueño del local o admin)
+      description: |
+        Devuelve las canchas con sus turnos y precios, las reservas activas o terminadas (con nombre y celular
+        del jugador) y los bloqueos del día. Nunca se guarda en caché (`Cache-Control: private, no-store`).
+      operationId: verAgendaDelDia
+      security: [{ sesion: [] }]
+      parameters:
+        - name: local
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: fecha
+          in: query
+          required: true
+          description: Día en hora de Lima (de 90 días atrás a 60 días adelante)
+          schema: { type: string, format: date, example: "2026-11-20" }
+      responses:
+        "200":
+          description: Agenda del día
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  agenda: { $ref: "#/components/schemas/AgendaDia" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/dueno/reservas:
+    post:
+      tags: [Dueño]
+      summary: Anotar una reserva hecha por teléfono o en persona
+      description: |
+        Queda confirmada con origen `owner_manual`. El total se calcula con los precios de la cancha.
+        Si `pagado` es mayor que 0 se registra un pago en efectivo. Puede ser de una hora que ya empezó
+        (para anotar lo que pasó hoy). Choques con otra reserva o con un bloqueo → `409`.
+      operationId: anotarReservaManual
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [canchaId, inicio, fin, nombre]
+              properties:
+                canchaId: { type: string, format: uuid }
+                inicio: { type: string, format: date-time }
+                fin: { type: string, format: date-time }
+                nombre: { type: string, minLength: 2, maxLength: 120, example: "Carlos Quispe" }
+                telefono: { type: string, example: "966123456" }
+                pagado: { type: number, minimum: 0, example: 30, description: "Efectivo recibido (0 a total)" }
+                nota: { type: string, maxLength: 300 }
+      responses:
+        "201":
+          description: Reserva anotada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  reserva:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      codigo: { type: string, example: "RY-7K2M9P" }
+                      total: { type: number, example: 140 }
+                      pagado: { type: number, example: 30 }
+                      estado: { type: string, example: confirmed }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/dueno/reservas/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Dueño]
+      summary: Cobrar, marcar si jugó o no vino, o cancelar una reserva
+      description: |
+        - `cobrar`: registra un pago en efectivo (`monto` de 0.01 hasta lo que falta). Si estaba por pagar, queda confirmada.
+        - `jugo` / `no_vino`: solo cuando la hora ya empezó.
+        - `cancelar`: solo antes de que termine; `motivo` es obligatorio y lo ve el jugador.
+      operationId: gestionarReservaDelLocal
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion]
+              properties:
+                accion: { type: string, enum: [cobrar, jugo, no_vino, cancelar] }
+                monto: { type: number, minimum: 0.01, description: "Obligatorio al cobrar" }
+                motivo: { type: string, minLength: 3, maxLength: 200, description: "Obligatorio al cancelar" }
+      responses:
+        "200":
+          description: Hecho
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  reserva:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      estado: { type: string, example: completed }
+                      pagado: { type: number }
+                      total: { type: number }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/dueno/bloqueos:
+    post:
+      tags: [Dueño]
+      summary: Cerrar horas de una cancha (mantenimiento, torneo, evento)
+      description: Los jugadores ven esas horas como cerradas. No se puede bloquear encima de reservas activas (`409 HAY_RESERVAS`).
+      operationId: bloquearHorario
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [canchaId, inicio, fin]
+              properties:
+                canchaId: { type: string, format: uuid }
+                inicio: { type: string, format: date-time }
+                fin: { type: string, format: date-time }
+                motivo: { type: string, maxLength: 120, example: Mantenimiento }
+      responses:
+        "201":
+          description: Horas cerradas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  bloqueo:
+                    type: object
+                    properties:
+                      id: { type: integer, example: 12 }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/dueno/bloqueos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    delete:
+      tags: [Dueño]
+      summary: Volver a abrir horas bloqueadas
+      operationId: quitarBloqueo
+      security: [{ sesion: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
 components:
   securitySchemes:
     sesion:
@@ -538,3 +714,63 @@ components:
       nullable: true
       description: Comparación de lo que leyó la IA con lo esperado (null si la IA no pudo leer)
       enum: [match, amount_mismatch, recipient_mismatch, date_out_of_range, duplicate_operation, unreadable, null]
+
+    AgendaDia:
+      type: object
+      properties:
+        local:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            nombre: { type: string, example: "La Bombonera" }
+            slug: { type: string }
+            estado: { type: string, example: approved }
+            adelantoPct: { type: number, example: 50 }
+        fecha: { type: string, format: date }
+        ahora: { type: string, format: date-time, description: Hora de la base de datos al armar la agenda }
+        canchas:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              nombre: { type: string, example: "Cancha 1" }
+              deporte: { type: string, example: "Fútbol" }
+              minutosTurno: { type: integer, example: 60 }
+              turnos:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    inicio: { type: string, format: date-time }
+                    fin: { type: string, format: date-time }
+                    precio: { type: number, nullable: true }
+        reservas:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              codigo: { type: string }
+              canchaId: { type: string, format: uuid }
+              inicio: { type: string, format: date-time }
+              fin: { type: string, format: date-time }
+              estado: { type: string, enum: [pending_payment, payment_review, confirmed, completed, no_show] }
+              origen: { type: string, enum: [web, mobile, chatbot, whatsapp, owner_manual] }
+              jugador: { type: string, nullable: true }
+              telefono: { type: string, nullable: true }
+              total: { type: number }
+              adelanto: { type: number }
+              pagado: { type: number }
+              vence: { type: string, format: date-time, nullable: true }
+              nota: { type: string, nullable: true }
+        bloqueos:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              canchaId: { type: string, format: uuid }
+              inicio: { type: string, format: date-time }
+              fin: { type: string, format: date-time }
+              motivo: { type: string, nullable: true }
