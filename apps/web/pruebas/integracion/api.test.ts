@@ -5,7 +5,7 @@ import { crearSupabaseFalso, ID_CANCHA, ID_LOCAL, ID_PAGO, ID_RESERVA, PNG, type
 
 // Fuera de Next.js no existe el contexto del pedido: se simulan connection(), la caché y la sesión
 jest.mock("next/server", () => ({ ...jest.requireActual("next/server"), connection: jest.fn(async () => undefined) }));
-jest.mock("next/cache", () => ({ cacheLife: jest.fn(), cacheTag: jest.fn() }));
+jest.mock("next/cache", () => ({ cacheLife: jest.fn(), cacheTag: jest.fn(), revalidateTag: jest.fn() }));
 
 let supabase = crearSupabaseFalso();
 jest.mock("@/modules/compartido/infraestructura/supabase/cliente-servidor", () => ({
@@ -43,6 +43,10 @@ function cargar() {
     gestionar: require("@/app/api/dueno/reservas/[id]/route"),
     bloqueos: require("@/app/api/dueno/bloqueos/route"),
     bloqueoId: require("@/app/api/dueno/bloqueos/[id]/route"),
+    configLocal: require("@/app/api/dueno/locales/[id]/route"),
+    canchasLocal: require("@/app/api/dueno/locales/[id]/canchas/route"),
+    cancha: require("@/app/api/dueno/canchas/[id]/route"),
+    adminLocales: require("@/app/api/admin/locales/route"),
     docs: require("@/app/api-docs/route"),
   };
 }
@@ -343,6 +347,126 @@ describe("agenda del dueño", () => {
     expect(await res.json()).toEqual({ ok: true });
     expect(supabase.rpc).toHaveBeenCalledWith("fn_quitar_bloqueo", { p_bloqueo: 12 });
     expect((await bloqueoId.DELETE(json("/api/dueno/bloqueos/abc", "DELETE"), ctx("abc"))).status).toBe(400);
+  });
+});
+
+describe("configuración del local", () => {
+  const configDeLaBase = {
+    local: { id: ID_LOCAL, nombre: "La Bombonera", slug: "la-bombonera", distrito: "Ayacucho", estado: "approved", adelanto_pct: 50 },
+    canchas: [{ id: ID_CANCHA, nombre: "Cancha 1", deporte: "futbol", precio: 60, horario: [{ dia: 1, abre: "08:00", cierra: "23:00" }] }],
+  };
+  const ajustes = { direccion: "Jr. Lima 123", whatsapp: "966123456", adelantoPct: 30, minutosApartado: 20, horasCancelacion: 12 };
+  const cancha = { nombre: "Cancha 1", deporte: "futbol", techada: false, maxMinutos: 120, horario: [{ dia: 1, abre: "08:00", cierra: "23:00" }], precio: 70, precioPunta: 90, puntaDesde: "19:00" };
+
+  it("GET /api/dueno/locales/{id} devuelve la configuración sin caché", async () => {
+    const { configLocal } = preparar({ fn_config_local: { data: configDeLaBase } });
+    const res = await configLocal.GET(json(`/api/dueno/locales/${ID_LOCAL}`, "GET"), ctx(ID_LOCAL));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    const { config } = await res.json();
+    expect(config.local).toEqual(expect.objectContaining({ nombre: "La Bombonera", adelantoPct: 50 }));
+    expect(config.canchas[0]).toEqual(expect.objectContaining({ precio: 60, horario: [{ dia: 1, abre: "08:00", cierra: "23:00" }] }));
+    expect((await configLocal.GET(json("/api/dueno/locales/x", "GET"), ctx("x"))).status).toBe(400);
+  });
+
+  it("GET /api/dueno/locales/{id} de otro dueño: 403", async () => {
+    const { configLocal } = preparar({ fn_config_local: { error: { code: "P0001", message: "LOCAL_AJENO" } } });
+    const res = await configLocal.GET(json(`/api/dueno/locales/${ID_LOCAL}`, "GET"), ctx(ID_LOCAL));
+    expect(res.status).toBe(403);
+  });
+
+  it("PUT /api/dueno/locales/{id} guarda las reglas y renueva la ficha pública", async () => {
+    const { revalidateTag } = jest.requireMock("next/cache");
+    const { configLocal } = preparar({ fn_guardar_local: { data: { id: ID_LOCAL, slug: "la-bombonera" } } });
+    const res = await configLocal.PUT(json(`/api/dueno/locales/${ID_LOCAL}`, "PUT", ajustes), ctx(ID_LOCAL));
+    expect(await res.json()).toEqual({ ok: true, local: { id: ID_LOCAL, slug: "la-bombonera" } });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_guardar_local", expect.objectContaining({ p_adelanto: 30, p_apartado: 20, p_cancelacion: 12 }));
+    expect(revalidateTag).toHaveBeenCalledWith("local-la-bombonera", { expire: 0 });
+  });
+
+  it.each([
+    ["AJUSTES_INVALIDOS", 400],
+    ["TELEFONO_INVALIDO", 400],
+    ["LOCAL_AJENO", 403],
+  ])("PUT /api/dueno/locales/{id}: si la base responde %s -> %i", async (mensaje, status) => {
+    const { configLocal } = preparar({ fn_guardar_local: { error: { code: "P0001", message: mensaje } } });
+    const res = await configLocal.PUT(json(`/api/dueno/locales/${ID_LOCAL}`, "PUT", ajustes), ctx(ID_LOCAL));
+    expect(res.status).toBe(status);
+    expect(await res.json()).toEqual({ ok: false, codigo: mensaje, error: expect.any(String) });
+  });
+
+  it("PUT /api/dueno/canchas/{id} guarda horario y precios", async () => {
+    const { cancha: ruta } = preparar({ fn_guardar_cancha: { data: { id: ID_CANCHA, slug: "la-bombonera", fuera_de_horario: 2 } } });
+    const res = await ruta.PUT(json(`/api/dueno/canchas/${ID_CANCHA}`, "PUT", cancha), ctx(ID_CANCHA));
+    expect(await res.json()).toEqual({ ok: true, cancha: { id: ID_CANCHA, slug: "la-bombonera", fueraDeHorario: 2 } });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_guardar_cancha", expect.objectContaining({ p_precio: 70, p_precio_punta: 90, p_punta_desde: "19:00" }));
+    expect((await ruta.PUT(json(`/api/dueno/canchas/${ID_CANCHA}`, "PUT", { ...cancha, deporte: "tenis" }), ctx(ID_CANCHA))).status).toBe(400);
+  });
+
+  it("PUT /api/dueno/canchas/{id}: horario vacío (400)", async () => {
+    const { cancha: ruta } = preparar({ fn_guardar_cancha: { error: { code: "P0001", message: "HORARIO_VACIO" } } });
+    const res = await ruta.PUT(json(`/api/dueno/canchas/${ID_CANCHA}`, "PUT", { ...cancha, horario: [] }), ctx(ID_CANCHA));
+    expect(res.status).toBe(400);
+    expect((await res.json()).codigo).toBe("HORARIO_VACIO");
+  });
+
+  it("POST /api/dueno/locales/{id}/canchas agrega una cancha (201)", async () => {
+    const { canchasLocal } = preparar({ fn_agregar_cancha: { data: { id: ID_CANCHA, slug: "la-bombonera" } } });
+    const res = await canchasLocal.POST(json(`/api/dueno/locales/${ID_LOCAL}/canchas`, "POST", { nombre: "Cancha 2", deporte: "voley", precio: 40 }), ctx(ID_LOCAL));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true, cancha: { id: ID_CANCHA, slug: "la-bombonera" } });
+    expect((await canchasLocal.POST(json(`/api/dueno/locales/${ID_LOCAL}/canchas`, "POST", "no es json"), ctx(ID_LOCAL))).status).toBe(400);
+  });
+
+  it("DELETE /api/dueno/canchas/{id}: con reservas pendientes no se quita (409)", async () => {
+    const { cancha: ruta } = preparar({ fn_quitar_cancha: { error: { code: "P0001", message: "CANCHA_CON_RESERVAS" } } });
+    const res = await ruta.DELETE(json(`/api/dueno/canchas/${ID_CANCHA}`, "DELETE"), ctx(ID_CANCHA));
+    expect(res.status).toBe(409);
+    const otra = preparar({ fn_quitar_cancha: { data: { id: ID_CANCHA, slug: "la-bombonera" } } });
+    expect(await (await otra.cancha.DELETE(json(`/api/dueno/canchas/${ID_CANCHA}`, "DELETE"), ctx(ID_CANCHA))).json()).toEqual({ ok: true });
+  });
+});
+
+describe("administración de locales", () => {
+  it("GET /api/admin/locales: solo admin", async () => {
+    const { adminLocales } = preparar({
+      fn_locales_admin: { data: [{ id: ID_LOCAL, nombre: "La Bombonera", slug: "la-bombonera", distrito: "Ayacucho", estado: "approved", sin_dueno: true, canchas: 2, reservas_futuras: 0 }] },
+    });
+    const res = await adminLocales.GET();
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect((await res.json()).locales[0]).toEqual(expect.objectContaining({ nombre: "La Bombonera", sinDueno: true }));
+
+    const otro = preparar({ fn_locales_admin: { error: { code: "P0001", message: "SOLO_ADMIN" } } });
+    expect((await otro.adminLocales.GET()).status).toBe(403);
+  });
+
+  it("PATCH /api/admin/locales/{id} asigna el dueño real", async () => {
+    const { admin } = preparar({
+      fn_asignar_dueno: { data: { id: ID_LOCAL, slug: "la-bombonera", estado: "approved", dueno: "Juan", correo: "juan@gmail.com", ahora_es_dueno: true } },
+    });
+    const res = await admin.PATCH(json(`/api/admin/locales/${ID_LOCAL}`, "PATCH", { accion: "asignar_dueno", correo: "Juan@Gmail.com" }), ctx(ID_LOCAL));
+    expect((await res.json()).local).toEqual(expect.objectContaining({ dueno: "Juan", ahoraEsDueno: true }));
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_asignar_dueno", { p_local: ID_LOCAL, p_correo: "juan@gmail.com" });
+  });
+
+  it("PATCH /api/admin/locales/{id}: correo mal escrito, sin cuenta o acción desconocida", async () => {
+    const { admin } = preparar({ fn_asignar_dueno: { error: { code: "P0001", message: "USUARIO_NO_ENCONTRADO" } } });
+    expect((await admin.PATCH(json(`/api/admin/locales/${ID_LOCAL}`, "PATCH", { accion: "asignar_dueno", correo: "juan" }), ctx(ID_LOCAL))).status).toBe(400);
+    expect((await admin.PATCH(json(`/api/admin/locales/${ID_LOCAL}`, "PATCH", { accion: "asignar_dueno", correo: "nadie@x.pe" }), ctx(ID_LOCAL))).status).toBe(404);
+    expect((await admin.PATCH(json(`/api/admin/locales/${ID_LOCAL}`, "PATCH", { accion: "borrar" }), ctx(ID_LOCAL))).status).toBe(400);
+  });
+
+  it("PATCH /api/admin/locales/{id} suspende y saca el local del mapa al instante", async () => {
+    const { admin, canchas } = preparar({
+      fn_catalogo_canchas: { data: [fila] },
+      fn_cambiar_estado_local: { data: { id: ID_LOCAL, slug: "cancha-demo", estado: "suspended", reservas_futuras: 2 } },
+    });
+    await canchas.GET();
+    const res = await admin.PATCH(json(`/api/admin/locales/${ID_LOCAL}`, "PATCH", { accion: "suspender", motivo: "Reclamos" }), ctx(ID_LOCAL));
+    expect((await res.json()).local).toEqual(expect.objectContaining({ estado: "suspended", reservasFuturas: 2 }));
+    await canchas.GET();
+    // la caché en memoria del catálogo se borró: se volvió a consultar la base
+    expect(supabase.rpc.mock.calls.filter(([fn]) => fn === "fn_catalogo_canchas")).toHaveLength(2);
   });
 });
 

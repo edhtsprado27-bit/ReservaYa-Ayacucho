@@ -225,6 +225,7 @@ describe("casos de uso de la agenda", () => {
       misLocales: jest.fn(async () => [
         { id: ID_LOCAL, nombre: "La Bombonera", estado: "approved" },
         { id: "otro", nombre: "En revisión", estado: "pending_review" },
+        { id: "susp", nombre: "Suspendido", estado: "suspended" },
       ]),
       agenda: jest.fn(async () => agenda()),
       reservaManual: jest.fn(async () => ({ id: ID_RESERVA, codigo: "RY-1", total: 80, pagado: 0, estado: "confirmed" })),
@@ -235,8 +236,8 @@ describe("casos de uso de la agenda", () => {
     return repo as unknown as jest.Mocked<AgendaRepositorio>;
   }
 
-  it("solo muestra la agenda de los locales publicados", async () => {
-    expect(await verLocalesConAgenda(repoFalso())).toEqual([{ id: ID_LOCAL, nombre: "La Bombonera", estado: "approved" }]);
+  it("muestra la agenda de los locales publicados y de los suspendidos (no de los que están en revisión)", async () => {
+    expect((await verLocalesConAgenda(repoFalso())).map((l) => l.estado)).toEqual(["approved", "suspended"]);
   });
 
   it("verAgenda valida el local y la fecha antes de ir a la base", async () => {
