@@ -1,7 +1,7 @@
 # Nivel 2 · Diagrama de contenedores
 
 > **Proyecto:** ReservaYa Ayacucho  
-> **Modelo:** C4 · Nivel 2 de 4 · **Versión:** 2.0 (Sprint 2: alineado con el sistema implementado)
+> **Modelo:** C4 · Nivel 2 de 4 · **Versión:** 2.1 (21/11/2026: módulos de agenda, locales, usuarios y soporte; enlaces de WhatsApp)
 
 ---
 
@@ -31,8 +31,8 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 
 | Contenedor | Tecnología | Responsabilidad | Datos que maneja |
 |---|---|---|---|
-| **Aplicación web** | Next.js 16 (React) · se ejecuta en el navegador | Interfaz para jugadores (mapa, grilla de horarios, subir comprobante), panel del dueño y panel del administrador | Ninguno persistente; solo el estado de la pantalla |
-| **Servidor de la aplicación (web + API REST)** | Next.js 16 en Vercel (funciones en São Paulo) | Renderiza las páginas, expone la API REST (`/api/...`) y ejecuta los módulos del **monolito modular** (catálogo, reservas, pagos, cuentas) | Ninguno propio; caché en memoria del catálogo (30 s) |
+| **Aplicación web** | Next.js 16 (React) · se ejecuta en el navegador | Interfaz para jugadores (mapa con filtro por servicios, grilla de horarios, subir comprobante, enlaces de WhatsApp), panel del dueño (agenda, configuración, pagos) y panel del administrador (locales, usuarios, WhatsApp de ayuda) | Ninguno persistente; solo el estado de la pantalla |
+| **Servidor de la aplicación (web + API REST)** | Next.js 16 en Vercel (funciones en São Paulo) | Renderiza las páginas, expone la API REST (`/api/...`) y ejecuta los módulos del **monolito modular** (catálogo, reservas, pagos, cuentas, agenda, locales, usuarios, soporte) | Ninguno propio; caché en memoria del catálogo (30 s) |
 | **Base de datos** | PostgreSQL en Supabase | Guarda la información y aplica las reglas críticas en funciones `SECURITY DEFINER` (reservar, registrar pago), con RLS y la restricción `EXCLUDE` anti doble reserva | Usuarios, distritos, locales, canchas, tarifas, horarios, reservas, pagos y uso de IA |
 | **Autenticación** | Supabase Auth | Registro, inicio de sesión y sesión en cookies; la base sabe quién llama con `auth.uid()` | Cuentas y sesiones |
 | **Almacenamiento de archivos** | Supabase Storage (bucket privado `comprobantes`) | Guarda las capturas de Yape/Plin; solo las ven el jugador, el dueño y el admin (enlaces firmados de 15 min) | Imágenes |
@@ -49,6 +49,7 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 | Aplicación web | Servidor de la aplicación | Pide páginas y llama a la API REST | HTTPS/JSON |
 | Aplicación web | Supabase Auth | Inicia sesión y cierra sesión (cliente del navegador) | HTTPS |
 | Aplicación web | OpenStreetMap | Descarga las teselas del mapa (Leaflet) | HTTPS |
+| Jugador, Dueño de cancha, Administrador | WhatsApp | Abren el chat con el mensaje ya escrito desde un enlace `wa.me` de la aplicación web (el servidor no se conecta con WhatsApp) | Enlace |
 | Servidor de la aplicación | Base de datos | Llama a funciones `fn_*` con la sesión de quien pide | HTTPS (PostgREST) |
 | Servidor de la aplicación | Almacenamiento | Sube capturas y crea enlaces firmados | HTTPS/REST |
 | Servidor de la aplicación | OpenRouter | Pide la lectura del comprobante a un modelo con visión | HTTPS/REST |
@@ -65,6 +66,7 @@ Abrir la caja «ReservaYa Ayacucho» del nivel 1 y mostrar los **contenedores** 
 | Anti doble reserva en PostgreSQL (ADR-011) | Bloqueo en Redis | La restricción de la base es la garantía más fuerte y no depende de otro servicio |
 | Comprobantes en almacenamiento privado | Guardar las imágenes en la base de datos | Las imágenes pesan; la base guarda solo la ruta y su huella SHA-256 |
 | Solo el servidor habla con OpenRouter | Llamar a la IA desde el navegador | La clave `OPENROUTER_API_KEY` nunca llega al navegador |
+| WhatsApp con enlaces `wa.me` (ADR-014) | WhatsApp Business Cloud API | La API exige empresa verificada, número dedicado y plantillas, y cobra por mensajes; los enlaces son gratis y no necesitan servidor |
 
 ---
 

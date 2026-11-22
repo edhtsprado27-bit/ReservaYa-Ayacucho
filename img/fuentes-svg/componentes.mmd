@@ -1,32 +1,40 @@
 flowchart LR
     subgraph pres["Presentación"]
+        direction TB
         web["Páginas Next.js<br/>app/ y components/"]
         rest["API REST<br/>app/api/**/route.ts"]
+        web ~~~ rest
     end
-    subgraph app["Aplicación"]
-        uc1["reservarHorario"]
-        uc2["enviarComprobante"]
-        uc3["revisarPago"]
-        uc4["verCatalogo"]
-        uc5["registrarCancha"]
+    subgraph app["Aplicación (casos de uso)"]
+        direction TB
+        uc1["Catálogo<br/>verCatalogo · registrarCancha"]
+        uc2["Reservas<br/>reservarHorario · cancelarReserva"]
+        uc3["Pagos<br/>enviarComprobante · revisarPago"]
+        uc4["Agenda<br/>anotarReserva · bloquearHorario"]
+        uc5["Locales<br/>guardarServiciosLocal · gestionarLocal"]
+        uc6["Usuarios y soporte<br/>gestionarUsuario · guardarAjustesPlataforma"]
+        uc1 ~~~ uc2 ~~~ uc3
+        uc4 ~~~ uc5 ~~~ uc6
     end
     subgraph dom["Dominio"]
-        ent["Entidades y reglas<br/>Reserva · Cancha · Pago · verificar"]
-        ports["Puertos<br/>ReservasRepositorio · CatalogoRepositorio<br/>PagosRepositorio · AlmacenComprobantes · LectorComprobantes"]
+        direction TB
+        ent["Entidades y reglas<br/>Reserva · Cancha · Pago · verificar<br/>Servicios · UsuarioAdmin · enlaceWhatsApp"]
+        ports["Puertos<br/>ReservasRepositorio · CatalogoRepositorio<br/>PagosRepositorio · AlmacenComprobantes<br/>LectorComprobantes · AgendaRepositorio<br/>LocalesRepositorio · UsuariosRepositorio<br/>AjustesRepositorio"]
+        ent ~~~ ports
     end
     subgraph infra["Infraestructura"]
+        direction TB
         pg["Repositorios<br/>Supabase (funciones fn_*)"]
-        ca["CatalogoEnCache<br/>(Decorator)"]
+        ca["Decorators de caché<br/>CatalogoEnCache · LocalesConVistasFrescas"]
         st["Almacén<br/>Supabase Storage"]
         or["Lector IA<br/>OpenRouter"]
+        pg ~~~ ca
+        st ~~~ or
     end
 
-    web --> rest --> app
+    pres --> app
     app --> dom
-    pg -.->|implementa| ports
-    ca -.->|implementa| ports
-    st -.->|implementa| ports
-    or -.->|implementa| ports
+    infra -. "implementa los puertos" .-> dom
 
     style pres fill:#e3f2fd,stroke:#1565c0
     style app fill:#e8f5e9,stroke:#2e7d32

@@ -28,7 +28,11 @@ apps/web/src/
     ├── cuentas/              Roles y perfil de quien navega
     ├── catalogo/             Canchas publicadas, registro y aprobación
     ├── reservas/             Grilla de horarios, reservar y cancelar
-    └── pagos/                Comprobantes Yape/Plin, lectura con IA y revisión del dueño
+    ├── pagos/                Comprobantes Yape/Plin, lectura con IA y revisión del dueño
+    ├── agenda/               Agenda del dueño: reservas por teléfono, cobros, bloqueos
+    ├── locales/              Configuración del local (reglas, servicios, canchas) y control del admin
+    ├── usuarios/             Gestión de cuentas por el admin: rol, suspender, reactivar
+    └── soporte/              WhatsApp de ayuda de la plataforma (enlaces wa.me)
 ```
 
 Cada módulo tiene las mismas carpetas:
@@ -202,4 +206,10 @@ export async function POST(request: Request) {
 | Catálogo | `CatalogoRepositorio` | `verCatalogo`, `registrarCancha`, `corregirCancha`, `quitarCancha`, `verPendientes`, `verMisPublicadas`, `revisarCancha` | `SupabaseCatalogoRepositorio`, `CatalogoEnCache` (Decorator) |
 | Reservas | `ReservasRepositorio` | `verLocal`, `verDisponibilidad`, `reservarHorario`, `verMisReservas`, `cancelarReserva` | `SupabaseReservasRepositorio` |
 | Pagos | `PagosRepositorio`, `AlmacenComprobantes`, `LectorComprobantes` | `enviarComprobante`, `verEstadoPago`, `verPagosPorRevisar`, `revisarPago`, `verMisLocalesPago`, `guardarDatosPago` | `SupabasePagosRepositorio`, `SupabaseAlmacenComprobantes`, `OpenRouterLectorComprobantes` |
-| Cuentas | — | `obtenerPerfil` | Supabase Auth + `fn_mi_perfil` |
+| Cuentas | — | `obtenerCuenta`, `obtenerPerfil` (perfil activo o suspensión con motivo) | Supabase Auth + `fn_mi_perfil` |
+| Agenda | `AgendaRepositorio` | `verLocalesConAgenda`, `verAgenda`, `anotarReserva`, `gestionarReserva`, `bloquearHorario`, `quitarBloqueo` | `SupabaseAgendaRepositorio` |
+| Locales | `LocalesRepositorio` | `verMisLocales`, `verConfiguracion`, `guardarAjustesLocal`, `guardarServiciosLocal`, `guardarCanchaDelLocal`, `agregarCanchaAlLocal`, `quitarCanchaDelLocal`, `verLocalesAdmin`, `gestionarLocal` | `SupabaseLocalesRepositorio`, `LocalesConVistasFrescas` (Decorator: renueva la ficha y el mapa) |
+| Usuarios | `UsuariosRepositorio` | `verUsuarios`, `gestionarUsuario` | `SupabaseUsuariosRepositorio` |
+| Soporte | `AjustesRepositorio` | `verAjustesPublicos`, `guardarAjustesPlataforma` | `SupabaseAjustesRepositorio`, lectura con `"use cache"` y Decorator que renueva la caché al guardar |
+
+Los enlaces de WhatsApp (`enlaceWhatsApp()` y los mensajes ya escritos) son funciones puras del dominio de `compartido`, porque los usan varios módulos (reservas, pagos, locales, usuarios, soporte).

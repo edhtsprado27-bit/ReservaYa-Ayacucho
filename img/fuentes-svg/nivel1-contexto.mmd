@@ -1,7 +1,7 @@
 flowchart TB
-    jugador["<b>Jugador</b><br/>[Persona]<br/>Busca canchas, reserva<br/>y sube su comprobante"]
+    jugador["<b>Jugador</b><br/>[Persona]<br/>Busca canchas, reserva,<br/>sube su comprobante<br/>y escribe al local"]
     dueno["<b>Dueño de cancha</b><br/>[Persona]<br/>Registra canchas<br/>y revisa los pagos"]
-    admin["<b>Administrador</b><br/>[Persona]<br/>Aprueba canchas y<br/>gestiona usuarios"]
+    admin["<b>Administrador</b><br/>[Persona]<br/>Aprueba canchas, gestiona<br/>locales, usuarios y la ayuda"]
 
     sistema["<b>ReservaYa Ayacucho</b><br/>[Sistema de software]<br/>Mapa de canchas de Huamanga, grilla de horarios,<br/>reservas sin cruces y pago del adelanto"]
 
@@ -9,18 +9,21 @@ flowchart TB
     openrouter["<b>OpenRouter</b><br/>[Sistema externo]<br/>Modelos de IA"]
     osm["<b>OpenStreetMap</b><br/>[Sistema externo]<br/>Teselas del mapa"]
     rutas["<b>Google Maps / Waze</b><br/>[Sistema externo]<br/>Rutas en el celular"]
+    whatsapp["<b>WhatsApp</b><br/>[Sistema externo]<br/>Chat con el local,<br/>el jugador o la ayuda"]
 
     jugador -- "Busca, reserva y<br/>sube comprobante" --> sistema
     dueno -- "Registra canchas<br/>y revisa pagos" --> sistema
-    admin -- "Aprueba canchas" --> sistema
+    admin -- "Aprueba canchas y<br/>gestiona usuarios" --> sistema
     jugador -. "Paga el adelanto" .-> yape
     sistema -- "Lectura del comprobante<br/>[HTTPS/REST]" --> openrouter
     sistema -- "Mapa<br/>[HTTPS]" --> osm
     jugador -. "Cómo llegar<br/>(enlace)" .-> rutas
+    jugador -. "Escribe al local<br/>o a la ayuda (enlace wa.me)" .-> whatsapp
+    dueno -. "Escribe al jugador<br/>(enlace wa.me)" .-> whatsapp
 
     classDef persona fill:#08427b,stroke:#052e56,color:#fff
     classDef interno fill:#1168bd,stroke:#0b4884,color:#fff
     classDef externo fill:#999999,stroke:#6b6b6b,color:#fff
     class jugador,dueno,admin persona
     class sistema interno
-    class yape,openrouter,osm,rutas externo
+    class yape,openrouter,osm,rutas,whatsapp externo

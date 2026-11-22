@@ -26,13 +26,15 @@
 
 | Historia de usuario | Requisitos funcionales relacionados |
 |---|---|
-| HU01 Buscar canchas | RF01, RF02, RF11, RF15 |
+| HU01 Buscar canchas | RF01, RF02, RF11 |
 | HU02 Gestionar canchas | RF03, RF13 |
 | HU03 Reservar horario | RF02, RF04, RF14 |
 | HU04 Subir comprobante | RF05, RF06 |
 | HU05 Validar pagos | RF06, RF10, RF15 |
 | HU06 Consultar y cancelar reservas | RF07, RF10, RF15 |
-| HU07 Aprobar canchas | RF08, RF15 |
+| HU07 Aprobar canchas | RF08 |
 | HU08 Asistente inteligente | RF09 |
 | HU09 Ver mapa y ruta | RF11, RF12 |
 | HU10 Confirmación y recordatorio | RF10 |
+| HU11 Escribir por WhatsApp | RF15 |
+| HU12 Gestionar cuentas y ayuda | RF08, RF15 |

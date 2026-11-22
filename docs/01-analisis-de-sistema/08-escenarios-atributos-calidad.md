@@ -45,12 +45,12 @@
 |---|---|
 | **Atributo de calidad** | Seguridad |
 | **Fuente** | Usuario sin sesión, con credenciales inválidas o sin permisos suficientes |
-| **Estímulo** | Un jugador intenta validar un pago o un dueño intenta modificar la cancha de otro dueño. |
+| **Estímulo** | Un jugador intenta validar un pago, un dueño intenta modificar la cancha de otro dueño o usar la gestión de usuarios, o una cuenta suspendida intenta reservar con su sesión abierta. |
 | **Condición** | Se realizan pruebas sobre las funciones protegidas del sistema. |
 | **Respuesta esperada** | El sistema rechaza la operación, no ejecuta el cambio solicitado y no expone información sensible ni los comprobantes de otros usuarios. |
 | **Medida** | Rechazar el 100 % de los intentos no autorizados incluidos en las pruebas definidas, sin exposición de datos sensibles en las respuestas revisadas. |
 | **Verificación** | Ejecutar pruebas de acceso autorizado y no autorizado por rol, revisar las respuestas y comprobar que no se expongan datos sensibles. |
-| **Estado** | **Probado (19/11/2026, k6 contra producción): cumple.** 16 de 16 intentos rechazados (sin sesión y como jugador), sin datos expuestos. Script `pruebas-carga/eq04-seguridad.js`. |
+| **Estado** | **Probado (19/11/2026, k6 contra producción): cumple.** 16 de 16 intentos rechazados (sin sesión y como jugador), sin datos expuestos. Script `pruebas-carga/eq04-seguridad.js`. **Ampliado el 21/11/2026 (pruebas E2E):** un dueño no entra a `/admin/usuarios` (la API responde `403`) ni cambia el WhatsApp de ayuda; una cuenta suspendida recibe `401` al reservar aunque tenga la sesión abierta; las cuentas de administrador no se pueden suspender. |
 
 ## EQ-05. Mantenibilidad: cambiar el modelo de IA
 

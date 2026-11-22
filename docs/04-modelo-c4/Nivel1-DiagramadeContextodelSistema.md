@@ -1,7 +1,7 @@
 # Nivel 1 · Diagrama de contexto del sistema
 
 > **Proyecto:** ReservaYa Ayacucho  
-> **Modelo:** C4 · Nivel 1 de 4 · **Versión:** 2.0 (Sprint 2: alineado con el sistema implementado)
+> **Modelo:** C4 · Nivel 1 de 4 · **Versión:** 2.1 (21/11/2026: WhatsApp por enlaces)
 
 ---
 
@@ -30,9 +30,9 @@ Mostrar **ReservaYa Ayacucho como una sola caja**: quiénes lo usan y con qué s
 
 | Persona             | Descripción                                         | Qué hace en el sistema                                                                                                        |
 |---------------------|-----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| **Jugador**         | Persona que reserva canchas para jugar              | Busca canchas por distrito, ve la disponibilidad en tiempo real, reserva, sube su comprobante de pago y consulta sus reservas |
-| **Dueño de cancha** | Propietario que ofrece sus canchas en la plataforma | Registra sus locales y canchas, define horarios, tarifas y servicios, y valida las reservas y pagos                           |
-| **Administrador**   | Responsable de la operación de la plataforma        | Aprueba canchas nuevas, gestiona usuarios y revisa estadísticas                                                               |
+| **Jugador**         | Persona que reserva canchas para jugar              | Busca canchas por distrito o servicios, ve la disponibilidad en tiempo real, reserva, sube su comprobante, consulta sus reservas y escribe por WhatsApp al local o a la ayuda |
+| **Dueño de cancha** | Propietario que ofrece sus canchas en la plataforma | Registra sus locales y canchas, define horarios, tarifas y servicios, lleva su agenda y valida las reservas y pagos |
+| **Administrador**   | Responsable de la operación de la plataforma        | Aprueba canchas nuevas, administra locales y cuentas (suspender, cambiar rol), configura el WhatsApp de ayuda y revisa estadísticas |
 
 ---
 
@@ -45,6 +45,7 @@ Mostrar **ReservaYa Ayacucho como una sola caja**: quiénes lo usan y con qué s
 | **OpenRouter**         | Sistema externo    | Da acceso a modelos de IA (gratuitos) para leer los comprobantes de pago                                 | Proveedor OpenRouter                |
 | **OpenStreetMap**      | Sistema externo    | Provee las teselas del mapa donde se ubican los locales                                                  | Comunidad OpenStreetMap             |
 | **Google Maps / Waze** | Sistema externo    | Trazan la ruta hasta el local en el celular del jugador (solo con un enlace)                             | Google                              |
+| **WhatsApp**           | Sistema externo    | Abre el chat con el mensaje ya escrito (solo con un enlace `wa.me`, sin API)                             | Meta                                |
 
 ---
 
@@ -54,7 +55,7 @@ Mostrar **ReservaYa Ayacucho como una sola caja**: quiénes lo usan y con qué s
 |--------------------|--------------------|------------------------------------------------------------------------|------------|
 | Jugador            | ReservaYa Ayacucho | Busca canchas, reserva y sube su comprobante                           | —          |
 | Dueño de cancha    | ReservaYa Ayacucho | Registra sus canchas, sus datos de Yape/Plin y revisa los pagos        | —          |
-| Administrador      | ReservaYa Ayacucho | Aprueba canchas y gestiona usuarios                                    | —          |
+| Administrador      | ReservaYa Ayacucho | Aprueba canchas, gestiona locales y usuarios y configura el WhatsApp de ayuda | —          |
 | Jugador            | Yape / Plin        | Paga el adelanto desde su aplicación                                   | —          |
 | ReservaYa Ayacucho | OpenRouter         | Envía la captura para leer monto, n.º de operación, fecha y destinatario | HTTPS/REST |
 | ReservaYa Ayacucho | OpenStreetMap      | Descarga las teselas del mapa                                          | HTTPS      |

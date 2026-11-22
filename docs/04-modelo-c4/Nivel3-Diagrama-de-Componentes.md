@@ -31,13 +31,17 @@ Abrir el contenedor **Servidor de la aplicación** del nivel 2 y mostrar sus **c
 
 | Componente | Responsabilidad | Funcionalidades principales | Carpeta en el código |
 |---|---|---|---|
-| **API REST** | Punto de entrada HTTP | 10 rutas en `/api`, validación de la entrada, respuestas de error uniformes, cabeceras de caché | `src/app/api/` |
+| **API REST** | Punto de entrada HTTP | 23 archivos de rutas (29 operaciones) en `/api`, validación de la entrada, respuestas de error uniformes, cabeceras de caché | `src/app/api/` |
 | **Proxy de sesión** | Renovar la sesión y proteger páginas | Redirige al login si no hay sesión en `/mi-cuenta`, `/dueno`, `/admin`, `/reservas` | `src/proxy.ts` |
-| **Cuentas** | Identidad y roles | Perfil de quien navega, roles (jugador, dueño, admin), destino seguro después del login | `src/modules/cuentas/` |
+| **Cuentas** | Identidad y roles | Perfil de quien navega, roles (jugador, dueño, admin), cuenta suspendida con su motivo, destino seguro después del login | `src/modules/cuentas/` |
 | **Catálogo** | Locales y canchas | Canchas publicadas para el mapa (con caché), registrar, corregir o quitar canchas en revisión, aprobar o rechazar | `src/modules/catalogo/` |
 | **Reservas** | Proceso de reserva | Ficha del local, grilla de horarios, reservar con clave de idempotencia, mis reservas, cancelar | `src/modules/reservas/` |
 | **Pagos** | Adelanto por Yape/Plin | Subir la captura, leerla con IA, comparar con lo esperado, revisión del dueño, datos de Yape/Plin del local | `src/modules/pagos/` |
-| **Compartido** | Lo común a todos | Error de la aplicación con códigos y mensajes, validaciones, clientes de Supabase, traducción de errores | `src/modules/compartido/` |
+| **Agenda** | Día a día del dueño | Agenda por cancha, reservas por teléfono, cobro en efectivo, "jugó" / "no vino", bloqueos | `src/modules/agenda/` |
+| **Locales** | Configuración y control | Reglas de reserva, servicios del local, canchas con horario y precios; locales publicados del admin (asignar dueño, suspender) | `src/modules/locales/` |
+| **Usuarios** | Gestión de cuentas (admin) | Buscar cuentas, cambiar entre jugador y dueño, suspender con motivo y reactivar | `src/modules/usuarios/` |
+| **Soporte** | Ayuda por WhatsApp | Número de ayuda de la plataforma (con caché) para el botón "Ayuda" | `src/modules/soporte/` |
+| **Compartido** | Lo común a todos | Error de la aplicación con códigos y mensajes, validaciones, clientes de Supabase, traducción de errores, enlaces de WhatsApp | `src/modules/compartido/` |
 
 ---
 
@@ -46,9 +50,10 @@ Abrir el contenedor **Servidor de la aplicación** del nivel 2 y mostrar sus **c
 | Origen | Destino | Descripción | Tipo de comunicación |
 |---|---|---|---|
 | Aplicación web | API REST | Llama a la API | HTTPS/JSON |
-| API REST | Catálogo, Reservas, Pagos | Invoca los casos de uso | Llamada en memoria |
+| API REST | Catálogo, Reservas, Pagos, Agenda, Locales, Usuarios, Soporte | Invoca los casos de uso | Llamada en memoria |
 | Páginas del servidor | Cuentas | Obtienen el perfil y el rol de quien navega | Llamada en memoria |
-| Reservas | Catálogo | Usa el dominio del catálogo (nombres de deportes y distritos) | Importación del dominio |
+| Reservas | Catálogo | Usa el dominio del catálogo (nombres de deportes, distritos y servicios) | Importación del dominio |
+| Locales | Catálogo | Al cambiar un local, renueva la caché del catálogo del mapa | Llamada en memoria |
 | Todos los módulos | Compartido | Errores, validaciones y clientes de Supabase | Importación |
 
 ---
@@ -63,6 +68,12 @@ Abrir el contenedor **Servidor de la aplicación** del nivel 2 y mostrar sus **c
 | Pagos | Almacenamiento | Sube capturas y crea enlaces firmados | HTTPS/REST | Adapter |
 | Pagos | OpenRouter | Lectura del comprobante con modelos de respaldo | HTTPS/REST | Adapter |
 | Cuentas | Supabase Auth | Usuario de la sesión y `fn_mi_perfil` | HTTPS | — |
+| Agenda | Base de datos | `fn_agenda_local`, `fn_reserva_manual`, `fn_gestionar_reserva`, `fn_bloquear_horario`... | HTTPS (PostgREST) | Repository |
+| Locales | Base de datos | `fn_config_local`, `fn_guardar_servicios`, `fn_guardar_cancha`, `fn_locales_admin`... | HTTPS (PostgREST) | Repository + Decorator (renueva la ficha y el mapa) |
+| Usuarios | Base de datos | `fn_usuarios_admin`, `fn_cambiar_rol`, `fn_cambiar_estado_usuario` | HTTPS (PostgREST) | Repository |
+| Soporte | Base de datos | `fn_ajustes_publicos`, `fn_guardar_ajustes` | HTTPS (PostgREST) | Repository + caché `"use cache"` |
+
+> **WhatsApp no aparece como destino:** el servidor no se conecta con WhatsApp. Solo arma enlaces `wa.me` que la persona abre en su celular (ADR-014).
 
 ---
 

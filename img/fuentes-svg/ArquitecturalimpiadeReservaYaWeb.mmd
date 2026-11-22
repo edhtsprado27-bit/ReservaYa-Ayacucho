@@ -1,9 +1,9 @@
 flowchart TB
     subgraph infra["INFRAESTRUCTURA · modules/*/infraestructura · Supabase (PostgreSQL, Auth, Storage) · OpenRouter · caché"]
         subgraph pres["PRESENTACIÓN · app/ (páginas y rutas /api) · components/"]
-            subgraph app["APLICACIÓN · modules/*/aplicacion · reservarHorario · enviarComprobante · revisarPago · verCatalogo"]
+            subgraph app["APLICACIÓN · modules/*/aplicacion · reservarHorario · revisarPago · anotarReserva · guardarServiciosLocal · gestionarUsuario"]
                 subgraph dom["DOMINIO · modules/*/dominio"]
-                    d["Entidades: Reserva · Cancha · Pago<br/>Reglas: validarPedido · verificar comprobante · tipoDeImagen<br/>Puertos: ReservasRepositorio · PagosRepositorio · LectorComprobantes"]
+                    d["Entidades: Reserva · Cancha · Pago · Servicios · UsuarioAdmin<br/>Reglas: validarPedido · verificar comprobante · enlaceWhatsApp<br/>Puertos: ReservasRepositorio · PagosRepositorio · LectorComprobantes<br/>AgendaRepositorio · LocalesRepositorio · UsuariosRepositorio · AjustesRepositorio"]
                 end
             end
         end

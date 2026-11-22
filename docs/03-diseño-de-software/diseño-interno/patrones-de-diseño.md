@@ -14,11 +14,12 @@ Documentar los patrones de diseño aplicados en ReservaYa Ayacucho, indicando d�
 
 | Patrón | Dónde se usa | Problema que resuelve | Se implementa con | Archivos en el código |
 |---|---|---|---|---|
-| Repository | Catálogo, Reservas y Pagos → Base de datos | El negocio no debe conocer SQL ni las funciones de Supabase | Funciones `fn_*` de PostgreSQL vía `supabase.rpc()` | `*/dominio/*.repositorio.ts`, `catalogo/infraestructura/supabase-catalogo.repositorio.ts`, `reservas/infraestructura/supabase-reservas.repositorio.ts`, `pagos/infraestructura/supabase-pagos.repositorio.ts` |
+| Repository | Catálogo, Reservas, Pagos, Agenda, Locales, Usuarios y Soporte → Base de datos | El negocio no debe conocer SQL ni las funciones de Supabase | Funciones `fn_*` de PostgreSQL vía `supabase.rpc()` | `*/dominio/*.repositorio.ts` y `*/infraestructura/supabase-*.repositorio.ts` (por ejemplo `reservas/infraestructura/supabase-reservas.repositorio.ts`, `usuarios/infraestructura/supabase-usuarios.repositorio.ts`) |
 | Adapter | Pagos → OpenRouter (IA) | OpenRouter tiene su propia API y el modelo puede cambiar | API REST de OpenRouter (`fetch`) | `pagos/dominio/pagos.puertos.ts` (`LectorComprobantes`), `pagos/infraestructura/openrouter-lector.ts` |
 | Adapter | Pagos → Almacén de archivos | Supabase Storage tiene su propia API | SDK `@supabase/supabase-js` | `pagos/dominio/pagos.puertos.ts` (`AlmacenComprobantes`), `pagos/infraestructura/supabase-almacen-comprobantes.ts` |
 | Decorator | Catálogo → Caché | Leer las canchas publicadas más rápido sin modificar el repositorio | Caché en memoria de 30 s | `catalogo/infraestructura/catalogo-en-cache.ts` (`CatalogoEnCache` envuelve a otro `CatalogoRepositorio`) |
-| Composition Root | Cada módulo | Elegir en un solo lugar qué implementación recibe cada caso de uso | Funciones fábrica | `*/infraestructura/composicion.ts` (`catalogoPublico`, `reservasConSesion`, `pagosConSesion`) |
+| Decorator | Locales y Soporte → Renovar cachés | Que un cambio del dueño o del admin (precios, servicios, WhatsApp de ayuda) se vea al instante sin que el repositorio sepa de cachés | `revalidateTag` de Next.js después de guardar | `locales/infraestructura/composicion.ts` (`LocalesConVistasFrescas`), `soporte/infraestructura/composicion.ts` (`ajustesConSesion`) |
+| Composition Root | Cada módulo | Elegir en un solo lugar qué implementación recibe cada caso de uso | Funciones fábrica | `*/infraestructura/composicion.ts` (`catalogoPublico`, `reservasConSesion`, `pagosConSesion`, `localesConSesion`, `usuariosConSesion`, `ajustesConSesion`) |
 | Singleton | Clientes de Supabase y catálogo público | Reutilizar una sola conexión y una sola caché por instancia | Variable de módulo | `compartido/infraestructura/supabase/cliente-publico.ts`, `catalogo/infraestructura/composicion.ts` |
 
 ## Cómo funciona cada patrón

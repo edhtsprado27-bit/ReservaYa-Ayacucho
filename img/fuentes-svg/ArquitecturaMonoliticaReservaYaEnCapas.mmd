@@ -10,7 +10,14 @@ flowchart TB
             m2["Catálogo"]
             m3["Reservas"]
             m4["Pagos"]
-            m5["Compartido"]
+            m5["Agenda"]
+            m6["Locales"]
+            m7["Usuarios"]
+            m8["Soporte (WhatsApp)"]
+            m9["Compartido"]
+            m1 ~~~ m2 ~~~ m3
+            m4 ~~~ m5 ~~~ m6
+            m7 ~~~ m8 ~~~ m9
         end
         subgraph c3["Capa de datos"]
             r["Repositorios y adaptadores"]
@@ -21,8 +28,10 @@ flowchart TB
     au[("Supabase Auth")]
     st[("Supabase Storage")]
     ia["OpenRouter"]
+    wa["WhatsApp<br/>(enlaces wa.me)"]
 
     usuarios --> mono
+    usuarios -. "abren el chat" .-> wa
     c3 --> bd & au & st & ia
 
     style mono fill:#f5f5f5,stroke:#333,stroke-width:2px

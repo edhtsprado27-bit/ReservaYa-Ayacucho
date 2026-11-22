@@ -2,38 +2,55 @@ flowchart TB
     web["<b>Aplicación web</b><br/>[Next.js]"]
 
     subgraph srv["Servidor de la aplicación [Contenedor · Next.js en Vercel]"]
-        rest["<b>API REST</b><br/>app/api/**/route.ts<br/>10 rutas"]
+        direction TB
+        rest["<b>API REST</b><br/>app/api/**/route.ts<br/>23 rutas · 29 operaciones"]
         proxy["<b>Proxy de sesión</b><br/>src/proxy.ts"]
-        cuentas["<b>Cuentas</b><br/>Perfil y roles"]
-        catalogo["<b>Catálogo</b><br/>Canchas publicadas (caché),<br/>registro y aprobación"]
-        reservas["<b>Reservas</b><br/>Grilla, reservar,<br/>mis reservas, cancelar"]
-        pagos["<b>Pagos</b><br/>Comprobante, IA,<br/>revisión del dueño"]
-        comp["<b>Compartido</b><br/>Errores, validaciones,<br/>clientes de Supabase"]
+        subgraph mods["Módulos (src/modules) · cada uno con Clean Architecture"]
+            direction TB
+            subgraph fila1[" "]
+                direction LR
+                reservas["<b>Reservas</b><br/>Grilla, reservar,<br/>mis reservas, cancelar"]
+                locales["<b>Locales</b><br/>Reglas, servicios, canchas;<br/>control del admin"]
+                catalogo["<b>Catálogo</b><br/>Canchas publicadas (caché),<br/>registro y aprobación"]
+                agenda["<b>Agenda</b><br/>Reservas por teléfono,<br/>cobros y bloqueos"]
+                reservas -. "dominio" .-> catalogo
+                locales -. "renueva el mapa" .-> catalogo
+            end
+            subgraph fila2[" "]
+                direction LR
+                cuentas["<b>Cuentas</b><br/>Perfil, roles y<br/>cuenta suspendida"]
+                pagos["<b>Pagos</b><br/>Comprobante, IA,<br/>revisión del dueño"]
+                usuarios["<b>Usuarios</b><br/>Rol, suspender<br/>y reactivar"]
+                soporte["<b>Soporte</b><br/>WhatsApp de ayuda<br/>(use cache)"]
+                cuentas ~~~ pagos ~~~ usuarios ~~~ soporte
+            end
+            fila1 ~~~ fila2
+        end
+        comp["<b>Compartido</b><br/>Errores, validaciones, clientes de Supabase,<br/>enlaces de WhatsApp (wa.me)"]
     end
 
-    bd[("<b>Base de datos</b><br/>[PostgreSQL · Supabase]")]
+    bd[("<b>Base de datos</b><br/>[PostgreSQL · Supabase]<br/>funciones fn_*")]
     auth[("<b>Supabase Auth</b>")]
     storage[("<b>Supabase Storage</b>")]
     openrouter["<b>OpenRouter</b><br/>[Sistema externo]"]
 
     web -- "HTTPS/JSON" --> rest
     web --> proxy
-    rest --> catalogo & reservas & pagos
+    rest -- "casos de uso" --> mods
+    mods -. "importan" .-> comp
+    mods -- "Repository (todos)<br/>+ Decorator (Catálogo, Locales)" --> bd
+    mods -- "Pagos · Adapter" --> storage
+    mods -- "Pagos · Adapter · HTTPS" --> openrouter
+    mods -- "Cuentas" --> auth
     proxy --> auth
-    reservas -. "dominio" .-> catalogo
-    catalogo & reservas & pagos & cuentas -.-> comp
-
-    catalogo -- "Repository + Decorator" --> bd
-    reservas -- "Repository · fn_reservar" --> bd
-    pagos -- "Repository" --> bd
-    pagos -- "Adapter" --> storage
-    pagos -- "Adapter · HTTPS" --> openrouter
-    cuentas --> auth
 
     classDef contenedor fill:#438dd5,stroke:#2e6295,color:#fff
     classDef componente fill:#85bbf0,stroke:#5d82a8,color:#000
     classDef externo fill:#999999,stroke:#6b6b6b,color:#fff
     class web,bd,auth,storage contenedor
-    class rest,proxy,cuentas,catalogo,reservas,pagos,comp componente
+    class rest,proxy,cuentas,catalogo,reservas,pagos,agenda,locales,usuarios,soporte,comp componente
     class openrouter externo
     style srv fill:none,stroke:#444,stroke-dasharray:6 4
+    style mods fill:#f4f8fc,stroke:#5d82a8
+    style fila1 fill:none,stroke:none
+    style fila2 fill:none,stroke:none
