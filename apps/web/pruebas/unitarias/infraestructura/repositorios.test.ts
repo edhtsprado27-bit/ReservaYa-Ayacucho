@@ -45,6 +45,11 @@ describe("SupabaseCatalogoRepositorio", () => {
     expect(filaACancha({ ...fila, deportes: null, rating: "4.5", total_resenas: 3 }).deportes).toEqual(["Fútbol"]);
   });
 
+  it("servicios del local: sin la columna (antes de 012) es una lista vacía; ordena y quita desconocidos", () => {
+    expect(filaACancha(fila).servicios).toEqual([]);
+    expect(filaACancha({ ...fila, servicios: ["tribuna", "sauna", "vestuarios", "tribuna"] }).servicios).toEqual(["vestuarios", "tribuna"]);
+  });
+
   it("envía los deportes con los códigos de la base al proponer", async () => {
     const { db, rpc } = crearSupabaseFalso({ fn_proponer_local: { data: { id: ID_LOCAL, slug: "x", estado: "pending_review" } } });
     await new SupabaseCatalogoRepositorio(db).proponer({ nombre: "A", distrito: "Ayacucho", lat: 1, lng: 2, deportes: ["Vóley", "Fútbol"], precioDesde: 40 });
@@ -120,7 +125,8 @@ describe("SupabaseReservasRepositorio", () => {
 describe("mapeo de reservas", () => {
   it("usa valores por defecto razonables", () => {
     const local = aLocal({ id: ID_LOCAL, slug: "s", nombre: "N", distrito: "D", lat: "-13", lng: "-74", canchas: [{ id: ID_CANCHA, nombre: "C1", deporte: "voley" }] });
-    expect(local).toEqual(expect.objectContaining({ adelantoPct: 50, minutosApartado: 15, horasCancelacion: 6, direccion: "", referencia: null }));
+    expect(local).toEqual(expect.objectContaining({ adelantoPct: 50, minutosApartado: 15, horasCancelacion: 6, direccion: "", referencia: null, servicios: [] }));
+    expect(aLocal({ id: ID_LOCAL, servicios: ["duchas", "banos"] }).servicios).toEqual(["duchas", "banos"]);
     expect(local.canchas[0]).toEqual(expect.objectContaining({ deporte: "Vóley", minutosTurno: 60, minMinutos: 60, maxMinutos: 180, precioDesde: null }));
     expect(aTurno({ cancha_id: ID_CANCHA, inicio: "a", fin: "b", estado: "ocupado", precio: null }).precio).toBeNull();
     const r = aReserva({ id: ID_RESERVA, codigo: "RY", estado: "confirmed", inicio: "a", fin: "b", total: "100", adelanto: "50", cancha: "C", deporte: "x", local: "L", slug: "s", distrito: "D" });

@@ -5,6 +5,7 @@ import {
   gestionarLocal,
   guardarAjustesLocal,
   guardarCanchaDelLocal,
+  guardarServiciosLocal,
   quitarCanchaDelLocal,
   verConfiguracion,
   verLocalesAdmin,
@@ -20,7 +21,7 @@ import {
   resumenHorario,
 } from "@/modules/locales/dominio/configuracion";
 import type { LocalesRepositorio } from "@/modules/locales/dominio/locales.repositorio";
-import { validarAjustes, validarCancha, validarNuevaCancha, validarPedidoAdmin } from "@/modules/locales/dominio/pedidos-locales";
+import { validarAjustes, validarCancha, validarNuevaCancha, validarPedidoAdmin, validarServicios } from "@/modules/locales/dominio/pedidos-locales";
 import { ID_CANCHA, ID_LOCAL } from "../../apoyo/supabase-falso";
 
 const todos = (abre: string, cierra: string) => [0, 1, 2, 3, 4, 5, 6].map((dia) => ({ dia, abre, cierra }));
@@ -113,6 +114,16 @@ describe("validación de pedidos", () => {
     expect(() => validarNuevaCancha({ nombre: "Cancha 3", deporte: "futsal" })).toThrow(invalido);
   });
 
+  it("servicios: limpia, ordena y quita repetidos; un código desconocido es error", () => {
+    expect(validarServicios({ servicios: [" Duchas", "vestuarios", "duchas"] })).toEqual(["vestuarios", "duchas"]);
+    expect(validarServicios({ servicios: [] })).toEqual([]);
+    expect(() => validarServicios({ servicios: ["piscina"] })).toThrow(expect.objectContaining({ codigo: "SERVICIO_INVALIDO", status: 400 }));
+    expect(() => validarServicios({ servicios: [1] })).toThrow(expect.objectContaining({ codigo: "SERVICIO_INVALIDO" }));
+    expect(() => validarServicios({ servicios: "duchas" })).toThrow(invalido);
+    expect(() => validarServicios({ servicios: Array(21).fill("duchas") })).toThrow(invalido);
+    expect(() => validarServicios(null)).toThrow(invalido);
+  });
+
   it("pedidos del administrador", () => {
     expect(validarPedidoAdmin({ accion: "asignar_dueno", correo: "  Juan@Gmail.com " })).toEqual({ accion: "asignar_dueno", correo: "juan@gmail.com" });
     expect(validarPedidoAdmin({ accion: "suspender", motivo: " Reclamos " })).toEqual({ accion: "suspender", motivo: "Reclamos" });
@@ -130,6 +141,7 @@ describe("casos de uso", () => {
       misLocales: jest.fn(async () => []),
       config: jest.fn(async () => ({})),
       guardarAjustes: jest.fn(async () => cambio),
+      guardarServicios: jest.fn(async () => ({ ...cambio, servicios: [] })),
       guardarCancha: jest.fn(async () => ({ ...cambio, fueraDeHorario: 0 })),
       agregarCancha: jest.fn(async () => cambio),
       quitarCancha: jest.fn(async () => cambio),
@@ -146,6 +158,7 @@ describe("casos de uso", () => {
     expect(() => guardarCanchaDelLocal(repo, "123", {})).toThrow(invalido);
     expect(() => quitarCanchaDelLocal(repo, "")).toThrow(invalido);
     expect(() => gestionarLocal(repo, "x", { accion: "reactivar" })).toThrow(invalido);
+    expect(() => guardarServiciosLocal(repo, "x", { servicios: [] })).toThrow(invalido);
     expect(repo.config).not.toHaveBeenCalled();
   });
 
@@ -167,6 +180,9 @@ describe("casos de uso", () => {
 
     await quitarCanchaDelLocal(repo, ID_CANCHA);
     expect(repo.quitarCancha).toHaveBeenCalledWith(ID_CANCHA);
+
+    await guardarServiciosLocal(repo, ID_LOCAL, { servicios: ["iluminacion", "banos"] });
+    expect(repo.guardarServicios).toHaveBeenCalledWith(ID_LOCAL, ["banos", "iluminacion"]);
   });
 
   it("el administrador asigna, suspende y reactiva", async () => {

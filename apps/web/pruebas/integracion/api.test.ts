@@ -47,6 +47,10 @@ function cargar() {
     canchasLocal: require("@/app/api/dueno/locales/[id]/canchas/route"),
     cancha: require("@/app/api/dueno/canchas/[id]/route"),
     adminLocales: require("@/app/api/admin/locales/route"),
+    serviciosLocal: require("@/app/api/dueno/locales/[id]/servicios/route"),
+    usuarios: require("@/app/api/admin/usuarios/route"),
+    usuarioId: require("@/app/api/admin/usuarios/[id]/route"),
+    ajustes: require("@/app/api/admin/ajustes/route"),
     docs: require("@/app/api-docs/route"),
   };
 }
@@ -467,6 +471,118 @@ describe("administración de locales", () => {
     await canchas.GET();
     // la caché en memoria del catálogo se borró: se volvió a consultar la base
     expect(supabase.rpc.mock.calls.filter(([fn]) => fn === "fn_catalogo_canchas")).toHaveLength(2);
+  });
+});
+
+describe("servicios del local", () => {
+  it("PUT /api/dueno/locales/{id}/servicios guarda, renueva la ficha y el mapa ya filtra por ellos", async () => {
+    const { revalidateTag } = jest.requireMock("next/cache");
+    const { serviciosLocal, canchas } = preparar({
+      fn_guardar_servicios: { data: { id: ID_LOCAL, slug: "cancha-demo", servicios: ["vestuarios", "duchas"] } },
+      fn_catalogo_canchas: { data: [{ ...fila, servicios: ["duchas", "vestuarios"] }] },
+    });
+    const res = await serviciosLocal.PUT(
+      json(`/api/dueno/locales/${ID_LOCAL}/servicios`, "PUT", { servicios: ["duchas", "Vestuarios"] }),
+      ctx(ID_LOCAL),
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(await res.json()).toEqual({ ok: true, local: { id: ID_LOCAL, slug: "cancha-demo", servicios: ["vestuarios", "duchas"] } });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_guardar_servicios", { p_local: ID_LOCAL, p_servicios: ["vestuarios", "duchas"] });
+    expect(revalidateTag).toHaveBeenCalledWith("local-cancha-demo", { expire: 0 });
+
+    const { canchas: lista } = await (await canchas.GET()).json();
+    expect(lista[0].servicios).toEqual(["vestuarios", "duchas"]);
+  });
+
+  it("PUT /api/dueno/locales/{id}/servicios: servicio inventado, cuerpo malo o local ajeno", async () => {
+    const { serviciosLocal } = preparar({ fn_guardar_servicios: { error: { code: "P0001", message: "LOCAL_AJENO" } } });
+    const malo = await serviciosLocal.PUT(json(`/api/dueno/locales/${ID_LOCAL}/servicios`, "PUT", { servicios: ["piscina"] }), ctx(ID_LOCAL));
+    expect(malo.status).toBe(400);
+    expect((await malo.json()).codigo).toBe("SERVICIO_INVALIDO");
+    expect((await serviciosLocal.PUT(json(`/api/dueno/locales/${ID_LOCAL}/servicios`, "PUT", "no es json"), ctx(ID_LOCAL))).status).toBe(400);
+    expect((await serviciosLocal.PUT(json("/api/dueno/locales/x/servicios", "PUT", { servicios: [] }), ctx("x"))).status).toBe(400);
+    expect((await serviciosLocal.PUT(json(`/api/dueno/locales/${ID_LOCAL}/servicios`, "PUT", { servicios: [] }), ctx(ID_LOCAL))).status).toBe(403);
+    expect(supabase.rpc).toHaveBeenCalledTimes(1); // los pedidos mal formados no llegan a la base
+  });
+});
+
+describe("gestión de usuarios (admin)", () => {
+  const ID_USUARIO = "66666666-6666-4666-8666-666666666666";
+
+  it("GET /api/admin/usuarios busca con filtro y no se guarda en caché", async () => {
+    const { usuarios } = preparar({
+      fn_usuarios_admin: {
+        data: [{ id: ID_USUARIO, nombre: "Ana Torres", correo: "ana@x.pe", rol: "player", estado: "active", creado: "2026-11-01T10:00:00Z", locales: 0, reservas: 2, soy_yo: false }],
+      },
+    });
+    const res = await usuarios.GET(json("/api/admin/usuarios?buscar=ana&filtro=jugadores", "GET"));
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect((await res.json()).usuarios[0]).toEqual(expect.objectContaining({ nombre: "Ana Torres", rol: "jugador", reservas: 2 }));
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_usuarios_admin", { p_buscar: "ana", p_filtro: "jugadores" });
+
+    await usuarios.GET(json("/api/admin/usuarios?filtro=raro", "GET"));
+    expect(supabase.rpc).toHaveBeenLastCalledWith("fn_usuarios_admin", { p_buscar: null, p_filtro: "todos" });
+  });
+
+  it("GET /api/admin/usuarios: un dueño o jugador recibe 403", async () => {
+    const { usuarios } = preparar({ fn_usuarios_admin: { error: { code: "P0001", message: "SOLO_ADMIN" } } });
+    expect((await usuarios.GET(json("/api/admin/usuarios", "GET"))).status).toBe(403);
+  });
+
+  it("PATCH /api/admin/usuarios/{id}: cambiar rol y suspender", async () => {
+    const { usuarioId } = preparar({
+      fn_cambiar_rol: { data: { id: ID_USUARIO, rol: "dueno", cambio: true } },
+      fn_cambiar_estado_usuario: { data: { id: ID_USUARIO, estado: "suspended", reservas_futuras: 1, locales_publicados: 0 } },
+    });
+    const rol = await usuarioId.PATCH(json(`/api/admin/usuarios/${ID_USUARIO}`, "PATCH", { accion: "cambiar_rol", rol: "dueno" }), ctx(ID_USUARIO));
+    expect(await rol.json()).toEqual({ ok: true, usuario: { id: ID_USUARIO, rol: "dueno", cambio: true } });
+    const sus = await usuarioId.PATCH(json(`/api/admin/usuarios/${ID_USUARIO}`, "PATCH", { accion: "suspender", motivo: "Reservas falsas" }), ctx(ID_USUARIO));
+    expect((await sus.json()).usuario).toEqual({ id: ID_USUARIO, estado: "suspended", reservasFuturas: 1, localesPublicados: 0 });
+    expect(supabase.rpc).toHaveBeenLastCalledWith("fn_cambiar_estado_usuario", { p_usuario: ID_USUARIO, p_accion: "suspender", p_motivo: "Reservas falsas" });
+  });
+
+  it.each([
+    ["fn_cambiar_rol", { accion: "cambiar_rol", rol: "jugador" }, "DUENO_CON_LOCALES", 409],
+    ["fn_cambiar_rol", { accion: "cambiar_rol", rol: "jugador" }, "USUARIO_ES_ADMIN", 403],
+    ["fn_cambiar_rol", { accion: "cambiar_rol", rol: "dueno" }, "CUENTA_NO_ENCONTRADA", 404],
+    ["fn_cambiar_estado_usuario", { accion: "suspender", motivo: "a" }, "FALTA_MOTIVO", 400],
+    ["fn_cambiar_estado_usuario", { accion: "reactivar" }, "CUENTA_SIN_CAMBIO", 409],
+  ])("PATCH /api/admin/usuarios/{id}: %s responde %s", async (fn, cuerpo, codigo, status) => {
+    const mensaje = codigo === "CUENTA_NO_ENCONTRADA" ? "USUARIO_NO_ENCONTRADO" : codigo === "CUENTA_SIN_CAMBIO" ? "ACCION_NO_PERMITIDA" : codigo;
+    const { usuarioId } = preparar({ [fn]: { error: { code: "P0001", message: mensaje } } });
+    const res = await usuarioId.PATCH(json(`/api/admin/usuarios/${ID_USUARIO}`, "PATCH", cuerpo), ctx(ID_USUARIO));
+    expect(res.status).toBe(status);
+    expect((await res.json()).codigo).toBe(codigo);
+  });
+
+  it("PATCH /api/admin/usuarios/{id}: id o acción no válidos (400, sin ir a la base)", async () => {
+    const { usuarioId } = preparar();
+    expect((await usuarioId.PATCH(json("/api/admin/usuarios/x", "PATCH", { accion: "reactivar" }), ctx("x"))).status).toBe(400);
+    expect((await usuarioId.PATCH(json(`/api/admin/usuarios/${ID_USUARIO}`, "PATCH", { accion: "cambiar_rol", rol: "admin" }), ctx(ID_USUARIO))).status).toBe(400);
+    expect((await usuarioId.PATCH(json(`/api/admin/usuarios/${ID_USUARIO}`, "PATCH", "no es json"), ctx(ID_USUARIO))).status).toBe(400);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("WhatsApp de ayuda (admin)", () => {
+  it("PUT /api/admin/ajustes guarda el número y renueva el botón de toda la web", async () => {
+    const { revalidateTag } = jest.requireMock("next/cache");
+    const { ajustes } = preparar({ fn_guardar_ajustes: { data: { whatsapp_soporte: "+51966111222" } } });
+    const res = await ajustes.PUT(json("/api/admin/ajustes", "PUT", { whatsappSoporte: "966 111 222" }));
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(await res.json()).toEqual({ ok: true, ajustes: { whatsappSoporte: "+51966111222" } });
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_guardar_ajustes", { p_whatsapp_soporte: "966111222" });
+    expect(revalidateTag).toHaveBeenCalledWith("ajustes-publicos", { expire: 0 });
+  });
+
+  it("PUT /api/admin/ajustes: número malo (400) o no es admin (403)", async () => {
+    const { ajustes } = preparar({ fn_guardar_ajustes: { error: { code: "P0001", message: "SOLO_ADMIN" } } });
+    const malo = await ajustes.PUT(json("/api/admin/ajustes", "PUT", { whatsappSoporte: "12345" }));
+    expect(malo.status).toBe(400);
+    expect((await malo.json()).codigo).toBe("TELEFONO_INVALIDO");
+    expect((await ajustes.PUT(json("/api/admin/ajustes", "PUT", "no es json"))).status).toBe(400);
+    expect((await ajustes.PUT(json("/api/admin/ajustes", "PUT", { whatsappSoporte: "" }))).status).toBe(403);
   });
 });
 

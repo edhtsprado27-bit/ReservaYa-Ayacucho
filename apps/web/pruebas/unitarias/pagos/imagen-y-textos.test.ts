@@ -33,6 +33,7 @@ describe("textos del pago", () => {
   });
   it("formatea el celular", () => {
     expect(celularTexto("966123456")).toBe("966 123 456");
+    expect(celularTexto("+51966123456")).toBe("966 123 456"); // así se guardan los celulares de las cuentas
     expect(celularTexto(null)).toBe("");
   });
 });

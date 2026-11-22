@@ -17,7 +17,7 @@ const configDeLaBase = {
   local: {
     id: ID_LOCAL, nombre: "La Bombonera", slug: "la-bombonera", distrito: "Ayacucho", estado: "suspended",
     motivo_estado: "Reclamos", direccion: "Jr. Lima 123", referencia: "", whatsapp: "966123456",
-    adelanto_pct: 30, minutos_apartado: 20, horas_cancelacion: 12,
+    adelanto_pct: 30, minutos_apartado: 20, horas_cancelacion: 12, servicios: ["duchas", "piscina", "vestuarios"],
   },
   canchas: [
     {
@@ -38,6 +38,8 @@ describe("mapeo de la configuración", () => {
   it("convierte números y une dos rangos del mismo día", () => {
     const c = aConfig(configDeLaBase);
     expect(c.local).toEqual(expect.objectContaining({ estado: "suspended", motivoEstado: "Reclamos", referencia: null, adelantoPct: 30 }));
+    // servicios: solo los conocidos y en el orden de la lista
+    expect(c.local.servicios).toEqual(["vestuarios", "duchas"]);
     expect(c.canchas[0]).toEqual(expect.objectContaining({ precio: 70, precioPunta: 90, puntaDesde: "19:00", reservasFuturas: 2, maxMinutos: 120 }));
     expect(c.canchas[0].horario).toEqual([
       { dia: 0, abre: "09:00", cierra: "20:00" },
@@ -47,7 +49,7 @@ describe("mapeo de la configuración", () => {
 
   it("usa valores por defecto si faltan datos", () => {
     const c = aConfig({ local: { id: ID_LOCAL, nombre: "L", slug: "l", estado: "approved" }, canchas: [{ id: ID_CANCHA, nombre: "C", deporte: "voley", techada: false }] });
-    expect(c.local).toEqual(expect.objectContaining({ distrito: "", direccion: "", whatsapp: null, adelantoPct: 50, minutosApartado: 15, horasCancelacion: 6 }));
+    expect(c.local).toEqual(expect.objectContaining({ distrito: "", direccion: "", whatsapp: null, adelantoPct: 50, minutosApartado: 15, horasCancelacion: 6, servicios: [] }));
     expect(c.canchas[0]).toEqual(expect.objectContaining({ minutosTurno: 60, maxMinutos: 180, horario: [], precio: null, precioPunta: null, reservasFuturas: 0 }));
     expect(aConfig({}).canchas).toEqual([]);
   });
@@ -55,8 +57,11 @@ describe("mapeo de la configuración", () => {
   it("fila del administrador", () => {
     expect(aLocalAdmin({ id: ID_LOCAL, nombre: "L", slug: "l", distrito: "D", estado: "approved", sin_dueno: true, canchas: 2, reservas_futuras: "3" })).toEqual({
       id: ID_LOCAL, nombre: "L", slug: "l", distrito: "D", estado: "approved", motivo: null, sinDueno: true,
-      duenoNombre: null, duenoCorreo: null, canchas: 2, reservasFuturas: 3,
+      duenoNombre: null, duenoCorreo: null, canchas: 2, reservasFuturas: 3, duenoTelefono: null, whatsapp: null,
     });
+    expect(aLocalAdmin({ id: ID_LOCAL, dueno_telefono: "+51966123456", whatsapp: "966000111" })).toEqual(
+      expect.objectContaining({ duenoTelefono: "+51966123456", whatsapp: "966000111" }),
+    );
   });
 });
 
@@ -73,8 +78,12 @@ describe("SupabaseLocalesRepositorio", () => {
       fn_locales_admin: { data: [{ id: ID_LOCAL, nombre: "L", slug: "l", distrito: "D", estado: "approved", sin_dueno: false, dueno_nombre: "Juan", dueno_correo: "j@x.pe", canchas: 1, reservas_futuras: 0 }] },
       fn_asignar_dueno: { data: { id: ID_LOCAL, slug: "la-bombonera", estado: "approved", dueno: "Juan", correo: "j@x.pe", ahora_es_dueno: true } },
       fn_cambiar_estado_local: { data: { id: ID_LOCAL, slug: "la-bombonera", estado: "suspended", reservas_futuras: 4 } },
+      fn_guardar_servicios: { data: { id: ID_LOCAL, slug: "la-bombonera", servicios: ["duchas", "vestuarios"] } },
     });
     const repo = localesConSesion(db, sinRefrescar);
+
+    expect(await repo.guardarServicios(ID_LOCAL, ["vestuarios", "duchas"])).toEqual({ id: ID_LOCAL, slug: "la-bombonera", servicios: ["vestuarios", "duchas"] });
+    expect(rpc).toHaveBeenCalledWith("fn_guardar_servicios", { p_local: ID_LOCAL, p_servicios: ["vestuarios", "duchas"] });
 
     expect(await repo.misLocales()).toEqual([{ id: ID_LOCAL, nombre: "La Bombonera", estado: "approved" }]);
     expect((await repo.config(ID_LOCAL)).canchas).toHaveLength(1);
@@ -122,6 +131,8 @@ describe("SupabaseLocalesRepositorio", () => {
     ["fn_asignar_dueno", "USUARIO_NO_ENCONTRADO", 404, (r: LocalesRepositorio) => r.asignarDueno(ID_LOCAL, "x@y.pe")],
     ["fn_cambiar_estado_local", "ACCION_NO_PERMITIDA", 409, (r: LocalesRepositorio) => r.cambiarEstado(ID_LOCAL, "reactivar", null)],
     ["fn_agregar_cancha", "DATOS_INVALIDOS", 400, (r: LocalesRepositorio) => r.agregarCancha(ID_LOCAL, {} as never)],
+    ["fn_guardar_servicios", "SERVICIO_INVALIDO", 400, (r: LocalesRepositorio) => r.guardarServicios(ID_LOCAL, ["x"])],
+    ["fn_guardar_servicios", "LOCAL_AJENO", 403, (r: LocalesRepositorio) => r.guardarServicios(ID_LOCAL, [])],
   ])("%s con error %s responde %i", async (fn, mensaje, status, llamar) => {
     const { db } = crearSupabaseFalso({ [fn]: { error: { code: "P0001", message: mensaje } } });
     await expect(llamar(localesConSesion(db, sinRefrescar))).rejects.toEqual(expect.objectContaining({ status }));
@@ -143,6 +154,7 @@ describe("renovación de las vistas públicas", () => {
       config: jest.fn(async () => ({})),
       localesAdmin: jest.fn(async () => []),
       guardarAjustes: jest.fn(async () => cambio),
+      guardarServicios: jest.fn(async () => ({ ...cambio, servicios: [] })),
       guardarCancha: jest.fn(async () => ({ ...cambio, fueraDeHorario: 0 })),
       agregarCancha: jest.fn(async () => cambio),
       quitarCancha: jest.fn(async () => cambio),
@@ -159,11 +171,12 @@ describe("renovación de las vistas públicas", () => {
     expect(refrescar).not.toHaveBeenCalled(); // leer o cambiar de dueño no cambia lo que ven los jugadores
 
     await repo.guardarAjustes(ID_LOCAL, {} as never);
+    await repo.guardarServicios(ID_LOCAL, []);
     await repo.guardarCancha(ID_CANCHA, {} as never);
     await repo.agregarCancha(ID_LOCAL, {} as never);
     await repo.quitarCancha(ID_CANCHA);
     await repo.cambiarEstado(ID_LOCAL, "suspender", "x");
-    expect(refrescar.mock.calls).toEqual([["la-bombonera"], ["la-bombonera"], ["la-bombonera"], ["la-bombonera"], ["otro-local"]]);
+    expect(refrescar.mock.calls).toEqual([["la-bombonera"], ["la-bombonera"], ["la-bombonera"], ["la-bombonera"], ["la-bombonera"], ["otro-local"]]);
   });
 
   it("si la base rechaza el cambio, no se renueva nada", async () => {
