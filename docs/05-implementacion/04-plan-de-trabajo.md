@@ -1,6 +1,6 @@
 # Plan de trabajo
 
-> **Proyecto:** ReservaYa Ayacucho · **Metodología:** iteraciones cortas con Spec-Driven Development · **Versión:** 2.0
+> **Proyecto:** ReservaYa Ayacucho · **Metodología:** iteraciones cortas con Spec-Driven Development · **Versión:** 2.1 (21/11/2026)
 
 ---
 
@@ -12,7 +12,7 @@
 | 2. Arquitectura y diseño | Markdown + Mermaid | Arquitectura, patrones, SOLID y modelo C4 (`docs/02` a `docs/04`) | Hecho; actualizado en el Sprint 2 para reflejar el código |
 | 3. Modelo de datos | SQL en Supabase | Esquema inicial y migraciones (`database/`) | Hecho |
 | 4. Desarrollo | VS Code + GitHub, Spec-Driven Development (`specs/`) | Código en `apps/web` organizado por módulos y capas | Primera versión funcional publicada (Sprint 2) |
-| 5. Pruebas | Jest, GitHub Actions, k6 | Pruebas unitarias e integración con cobertura y CI (`docs/06`); pruebas de carga | Jest y CI hechos; k6 en curso |
+| 5. Pruebas | Jest, Playwright, GitHub Actions, k6 | Pruebas unitarias, de integración y E2E con cobertura y CI (`docs/06`); pruebas de carga | Hecho: 303 pruebas de Jest, 21 E2E y k6 |
 | 6. Despliegue | Vercel, Supabase, Upstash, Cloudflare | Sistema publicado (`docs/05/03`) | Publicado en Vercel; dominio propio pendiente; Redis pospuesto (ADR-013) |
 
 ---
@@ -28,7 +28,10 @@
 | 5 | Pagos con IA | HU04, HU05 | Captura en Storage privado, lectura con OpenRouter, revisión del dueño (spec 006) | Hecho |
 | 6 | Arquitectura en el código | — | Módulos con Clean Architecture, puertos y adaptadores, documentos alineados | Hecho (Sprint 2) |
 | 7 | Calidad | — | Swagger, Jest + cobertura + GitHub Actions (spec 007); k6 hasta 2 000 usuarios y análisis de BD y caché (spec 008) | Hecho (Sprint 2) |
-| 8 | Paneles completos y avisos | HU08, HU10 | Agenda del dueño, precios y horarios desde la web, notificaciones | Siguiente |
+| 8 | Paneles del dueño y del admin | HU02, HU06, HU07 | Agenda del dueño (spec 009), precios, horarios y reglas desde la web, locales del admin (spec 010), pruebas E2E en el CI (spec 011) | Hecho (Sprint 2) |
+| 9 | Servicios, usuarios y WhatsApp | HU01, HU05, HU07 | Servicios del local y filtro del mapa (RF01, RF03), gestión de usuarios (RF08), contacto y ayuda por WhatsApp con enlaces `wa.me` (RF15, ADR-014) (spec 012) | Hecho (Sprint 2) |
+| 10 | Asistente con IA | HU08 | Recomendaciones y soporte con OpenRouter (RF09) | Siguiente |
+| 11 | Dominio, CDN y avisos por correo | HU10 | Dominio propio con Cloudflare; correos de confirmación, rechazo, cancelación y recordatorio (RF10) | Pendiente |
 
 ---
 
@@ -37,14 +40,14 @@
 | Pantalla | Usuario | Contenido |
 |---|---|---|
 | Inicio | Jugador | Buscador por distrito, botón «Cerca de mí» y mapa con los locales |
-| Detalle del local | Jugador | Fotos, canchas, servicios, mapa, botones «Google Maps» y «Waze», calendario de horas libres |
+| Detalle del local | Jugador | Canchas, servicios, botones «Google Maps», «Waze» y «Escribir por WhatsApp», calendario de horas libres |
 | Confirmar reserva | Jugador | Resumen, total, cuenta regresiva de 15 minutos, número Yape/Plin y subida del comprobante |
 | Mis reservas | Jugador | Estado de cada reserva, cancelar, cómo llegar |
 | Asistente | Jugador | Chat con la IA |
 | Mis locales | Dueño | Registro con mapa para marcar la ubicación, canchas, horarios y tarifas |
 | Agenda | Dueño | Reservas del día por cancha |
 | Pagos por revisar | Dueño | Comprobante, lo que leyó la IA y botones Aprobar / Rechazar |
-| Panel | Administrador | Locales por aprobar, usuarios y estadísticas |
+| Panel | Administrador | Locales por aprobar, locales publicados, usuarios (`/admin/usuarios`), WhatsApp de ayuda; estadísticas pendientes |
 
 ---
 

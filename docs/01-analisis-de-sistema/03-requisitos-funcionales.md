@@ -18,6 +18,7 @@
 | RF12 | El sistema debe permitir abrir la ruta hasta el local en Google Maps o Waze. |
 | RF13 | El sistema debe guardar las coordenadas del local a partir del punto que el dueño marca en el mapa. |
 | RF14 | El sistema debe liberar automáticamente el horario de las reservas sin comprobante cuando vence el apartado (15 minutos por defecto, configurable por local). |
+| RF15 | El sistema debe permitir escribir por WhatsApp con el mensaje ya escrito: el jugador al local (desde la ficha y desde su reserva, con el código), cualquier persona a la ayuda de la plataforma (botón «Ayuda», número que configura el administrador), el dueño al jugador y el administrador al dueño o a cualquier cuenta. Se usan enlaces `wa.me`, sin la API de pago de WhatsApp (ADR-014). |
 
 ---
 
@@ -25,13 +26,13 @@
 
 | Historia de usuario | Requisitos funcionales relacionados |
 |---|---|
-| HU01 Buscar canchas | RF01, RF02, RF11 |
+| HU01 Buscar canchas | RF01, RF02, RF11, RF15 |
 | HU02 Gestionar canchas | RF03, RF13 |
 | HU03 Reservar horario | RF02, RF04, RF14 |
 | HU04 Subir comprobante | RF05, RF06 |
-| HU05 Validar pagos | RF06, RF10 |
-| HU06 Consultar y cancelar reservas | RF07, RF10 |
-| HU07 Aprobar canchas | RF08 |
+| HU05 Validar pagos | RF06, RF10, RF15 |
+| HU06 Consultar y cancelar reservas | RF07, RF10, RF15 |
+| HU07 Aprobar canchas | RF08, RF15 |
 | HU08 Asistente inteligente | RF09 |
 | HU09 Ver mapa y ruta | RF11, RF12 |
 | HU10 Confirmación y recordatorio | RF10 |

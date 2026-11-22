@@ -1,7 +1,7 @@
 # Pruebas E2E (de punta a punta) con Playwright
 
-> **Proyecto:** ReservaYa Ayacucho · **Herramientas:** Playwright 1.63 (Chromium), PostgreSQL 16, GitHub Actions · **Versión:** 1.0 (20/11/2026)  
-> **Spec:** `specs/011-pruebas-e2e/spec.md` · **Código:** `apps/web/pruebas-e2e/` y `apps/web/playwright.config.ts`
+> **Proyecto:** ReservaYa Ayacucho · **Herramientas:** Playwright 1.63 (Chromium), PostgreSQL 16, GitHub Actions · **Versión:** 1.1 (21/11/2026)  
+> **Specs:** `specs/011-pruebas-e2e/spec.md`, `specs/012-servicios-usuarios-whatsapp/spec.md` · **Código:** `apps/web/pruebas-e2e/` y `apps/web/playwright.config.ts`
 
 ---
 
@@ -23,7 +23,7 @@ Playwright (Chromium)  ──▶  Web de ReservaYa compilada (next build + next 
                              /storage/v1  subir la captura del pago y verla con enlace firmado
                                   │  cada pedido con el rol anon/authenticated y el usuario del JWT
                                   ▼
-                           PostgreSQL 16 con database/supabase_inicial.sql + migraciones 004 a 011
+                           PostgreSQL 16 con database/supabase_inicial.sql + migraciones 004 a 012
 ```
 
 | Pieza | ¿Real o de prueba? |
@@ -41,10 +41,10 @@ Playwright (Chromium)  ──▶  Web de ReservaYa compilada (next build + next 
 
 | Cuenta | Rol | Para qué |
 |---|---|---|
-| `admin@e2e.pe` | Administrador | Aprobar, asignar dueño, suspender |
+| `admin@e2e.pe` | Administrador | Aprobar, asignar dueño, suspender locales y cuentas, WhatsApp de ayuda |
 | `dueno@e2e.pe` (Rosa Quispe) | Dueño de **Complejo Los Andes** | Agenda, configuración, confirmar pagos |
 | `dueno2@e2e.pe` (Mario Cárdenas) | Dueño sin locales | Recibe "La Canchita del Barrio" |
-| `jugador2@e2e.pe`, `jugador3@e2e.pe` | Jugadores | Doble reserva simultánea |
+| `jugador2@e2e.pe`, `jugador3@e2e.pe` (Ana Torres, Pedro Rojas) | Jugadores | Doble reserva simultánea; Pedro además se pasa a dueño y se suspende |
 | Una cuenta nueva por ejecución | Jugador | Se registra durante la prueba |
 
 Las contraseñas solo existen en esa base de pruebas (se guardan cifradas con scrypt). Locales: **Complejo Los Andes** (publicado, Yape configurado; Cancha 1 fútbol S/ 60 y S/ 80 desde las 18:00, Cancha 2 vóley S/ 40), **La Canchita del Barrio** (publicada, sin dueño) y **Grass Pendiente** (en revisión). Todas atienden de 06:00 a 23:00. Las pruebas usan siempre el día de **mañana** para tener todas las horas por delante.
@@ -66,7 +66,12 @@ Las contraseñas solo existen en esa base de pruebas (se guardan cifradas con sc
 | 13 | `dueno.spec.ts` | Agenda: bloqueo por mantenimiento | El jugador ve 07:00 y 08:00 "Cerrada" y 09:00 libre; al abrir de nuevo, vuelve a estar libre |
 | 14 | `dueno.spec.ts` | Configuración de una cancha | Precio S/ 45 y horario 08:00–22:00: el jugador ve el precio nuevo, ya no ve las 06:00 ni las 22:00 |
 | 15 | `jugador.spec.ts` | **Recorrido completo del jugador** | Busca "andes" → ve horarios y precio de hora punta → sin sesión le pide ingresar → se registra → reserva las 19:00 → ve el Yape y el titular del local → sube la captura → "Pago en revisión" → el dueño ve la captura y confirma → en Mi cuenta aparece "Confirmada" |
-| 16 | `celular.spec.ts` | En el celular (Pixel 7) | Buscar, abrir la cancha, elegir hora y ver el total, sin que la página se salga de la pantalla |
+| 16 | `servicios.spec.ts` | **Servicios del local y WhatsApp del local** (RF01, RF03, RF15) | El dueño marca vestuarios, duchas e iluminación → la ficha los muestra en ese orden y tiene "Escribir por WhatsApp" (`wa.me/51966123456` con el mensaje ya escrito) → en el mapa, "Con: Duchas" deja solo Los Andes y "Duchas + Tribuna" no deja ninguno → al desmarcar uno, la ficha cambia al instante |
+| 17 | `usuarios.spec.ts` | **Gestión de usuarios: rol** (RF08) | Busca "pedro" → lo pasa a dueño y lo devuelve a jugador; una dueña con locales no tiene "Pasar a jugador"; la fila del propio admin no tiene botones |
+| 18 | `usuarios.spec.ts` | **Gestión de usuarios: suspender y reactivar** (RF08) | Sin motivo no deja; suspendida, su sesión abierta lleva a "Tu cuenta está suspendida" con el motivo, la API rechaza su reserva (`401`) y al ingresar con el formulario también llega al aviso; al reactivar, vuelve a Mi cuenta |
+| 19 | `usuarios.spec.ts` | Accesos de usuarios | Un dueño no entra a `/admin/usuarios` y la API responde `403` (también al cambiar el WhatsApp de ayuda) |
+| 20 | `whatsapp.spec.ts` | **WhatsApp de ayuda** (RF15) | Sin número no hay botón; "12345" → error; "966 111 222" → el botón "Ayuda" sale en el mapa, la ficha y el login con `https://wa.me/51966111222?text=…`; "WhatsApp al dueño" en `/admin`; vacío → el botón desaparece |
+| 21 | `celular.spec.ts` | En el celular (Pixel 7) | Buscar, abrir la cancha, elegir hora y ver el total, sin que la página se salga de la pantalla |
 
 ---
 
@@ -74,12 +79,21 @@ Las contraseñas solo existen en esa base de pruebas (se guardan cifradas con sc
 
 Ejecución del 20/11/2026 (simulación completa del CI en una copia limpia del repositorio, y tres corridas seguidas desde una base nueva): **16 de 16 pruebas pasan, en unos 90 segundos, sin fallos al azar.**
 
+Ejecución del 21/11/2026, con servicios, gestión de usuarios y WhatsApp (paso 9): **21 de 21 pruebas pasan, en unos 2 minutos**, desde una base nueva con las migraciones 004 a 012.
+
 | Evidencia | |
 |---|---|
 | ![Doble reserva: el segundo jugador ve el aviso y la hora ocupada](../../img/evidencias/e2e-doble-reserva.png) | **Doble reserva simultánea:** Pedro pulsó "Reservar" al mismo tiempo que Ana. La base dejó pasar solo una reserva; Pedro ve el aviso y las 21:00 ya ocupadas, sin recargar. |
 | ![Reserva confirmada en Mi cuenta](../../img/evidencias/e2e-reserva-confirmada.png) | **Fin del recorrido del jugador:** después de subir la captura y de que el dueño confirmara el pago. |
 
 <img src="../../img/evidencias/e2e-celular.png" alt="Grilla de horarios en el celular" width="320">
+
+| Evidencia (paso 9) | |
+|---|---|
+| ![Ficha con servicios y botón de WhatsApp](../../img/evidencias/e2e-servicios-ficha.png) | **Servicios y WhatsApp del local:** lo que marcó el dueño sale en la ficha; "Escribir por WhatsApp" abre el chat con el mensaje ya escrito. |
+| ![Mapa con filtro de servicios y botón Ayuda](../../img/evidencias/e2e-ayuda-whatsapp.png) | **Filtro "Con:" y botón "Ayuda":** el número lo configura el admin; es un enlace `wa.me`, sin costo. |
+| ![Gestión de usuarios](../../img/evidencias/e2e-usuarios-admin.png) | **Usuarios (admin):** buscar, filtrar, pasar a dueño, suspender con motivo. Las cuentas de administrador no tienen botones. |
+| ![Cuenta suspendida](../../img/evidencias/e2e-cuenta-suspendida.png) | **Cuenta suspendida:** la persona ve el motivo y no puede reservar. |
 
 ### Lo que encontraron las pruebas
 
@@ -95,9 +109,9 @@ El trabajo **"Pruebas E2E (Playwright)"** de `.github/workflows/ci.yml` corre de
 |---|---|
 | Servicio `postgres:16` | PostgreSQL vacío solo para esta ejecución |
 | `npx playwright install --with-deps chromium` | Navegador |
-| `npm run e2e:base` | Crea la base: imitación de Supabase + esquema + migraciones 004 a 011 + datos |
+| `npm run e2e:base` | Crea la base: imitación de Supabase + esquema + migraciones 004 a 012 + datos |
 | `npm run build` | Compila la web apuntando al Supabase de pruebas |
-| `npm run e2e` | Levanta el Supabase de pruebas y la web, y ejecuta las 16 pruebas |
+| `npm run e2e` | Levanta el Supabase de pruebas y la web, y ejecuta las 21 pruebas |
 | Resumen | Tabla con cada prueba en la página de la ejecución |
 | Artefactos | `informe-e2e` (informe HTML de Playwright) y `evidencias-e2e` (capturas y un video por prueba), 30 días |
 

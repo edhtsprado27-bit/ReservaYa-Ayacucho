@@ -1,7 +1,7 @@
 # Modelo de datos
 
-> **Proyecto:** ReservaYa Ayacucho · **Base de datos:** PostgreSQL en Supabase · **Versión:** 2.0 (Sprint 2: esquema implementado)  
-> **Archivos:** `database/supabase_inicial.sql` (tablas, restricciones y datos base) y `database/migrations/004` a `009` (funciones, RLS y cambios)
+> **Proyecto:** ReservaYa Ayacucho · **Base de datos:** PostgreSQL en Supabase · **Versión:** 2.1 (21/11/2026: servicios, gestión de usuarios y ajustes de la plataforma)  
+> **Archivos:** `database/supabase_inicial.sql` (tablas, restricciones y datos base) y `database/migrations/004` a `012` (funciones, RLS y cambios)
 
 ---
 
@@ -15,12 +15,15 @@ Describir las tablas que usa el sistema, qué módulo es dueño de cada una y la
 
 | Módulo | Tablas | Qué guarda |
 |---|---|---|
-| Cuentas | `users` | Perfil de cada cuenta de Supabase Auth: nombre, teléfono, rol (`player`, `owner`, `admin`) y estado |
+| Cuentas | `users` | Perfil de cada cuenta de Supabase Auth: nombre, teléfono, rol (`player`, `owner`, `admin`), estado (`active`, `suspended`) y motivo de la suspensión (`status_reason`, 012) |
 | Catálogo | `districts`, `venues`, `courts`, `pricing_rules`, `court_operating_hours`, `court_blackouts` | Distritos de Huamanga (activos e inactivos), locales con su ubicación y estado de revisión, canchas, tarifas normal y punta, horario de atención y cierres |
+| Servicios del local | `amenities`, `venue_amenities` | Lista fija de 8 servicios (vestuarios, duchas, baños, estacionamiento, cafetería, tribuna, iluminación, balón incluido) y cuáles ofrece cada local (012) |
 | Reservas | `bookings`, `booking_status_history` | Reservas con su rango de tiempo (`period`), estado, montos, apartado y clave de idempotencia; historial de cambios de estado |
 | Pagos | `payments`, `receipt_extractions` | Comprobantes (ruta en Storage, huella SHA-256, método, estado) y lo que leyó la IA |
 | IA | `ai_model_configs`, `ai_requests` | Modelo, respaldos, temperatura y prompt por función; registro de cada llamada (tokens, costo, latencia, estado) |
 | Archivos | `storage.objects` (bucket `comprobantes`) | Capturas de Yape/Plin, privadas |
+| Plataforma | `app_settings` | Ajustes generales; por ahora el WhatsApp de ayuda (`whatsapp_soporte`). Sin acceso directo desde la API: solo por funciones (012) |
+| Auditoría | `audit_logs` | Quién hizo cada cambio de administración (locales, canchas, servicios, roles, suspensiones, ajustes) |
 
 ---
 
@@ -33,7 +36,10 @@ Describir las tablas que usa el sistema, qué módulo es dueño de cada una y la
 | Máximo 2 reservas «por pagar» por persona; hasta 30 días antes | Validación dentro de `fn_reservar` | Evita que alguien aparte todas las horas sin pagar |
 | El precio no lo decide el navegador | `fn_reservar` calcula el total turno por turno con `pricing_rules` | Seguridad |
 | Los apartados vencen solos | Un apartado vencido se trata como libre al instante; `pg_cron` ejecuta `fn_expire_holds()` cada minuto | Libera el horario aunque nadie use la web |
-| Las tablas sensibles no se exponen | RLS activado y `REVOKE` a `anon` y `authenticated` en `bookings`, `payments`, `ai_*`; acceso solo por funciones `SECURITY DEFINER` que validan `auth.uid()` | Nadie ve quién reservó otro horario ni pagos ajenos |
+| Las tablas sensibles no se exponen | RLS activado y `REVOKE` a `anon` y `authenticated` en `bookings`, `payments`, `ai_*`, `app_settings`; acceso solo por funciones `SECURITY DEFINER` que validan `auth.uid()` | Nadie ve quién reservó otro horario ni pagos ajenos |
+| Una cuenta suspendida no puede hacer nada | `fn_usuario_actual()` solo devuelve cuentas `active`; todas las funciones con sesión la usan | La suspensión vale al instante aunque la persona tenga la sesión abierta |
+| Ningún admin se quita el acceso por error | `fn_usuario_gestionable()` rechaza cambiar o suspender cuentas de administrador (`USUARIO_ES_ADMIN`) | Evita quedarse sin administrador |
+| Un dueño con locales no pasa a jugador | `fn_cambiar_rol` responde `DUENO_CON_LOCALES` | Sus locales no quedan sin quien los administre |
 | El mismo comprobante no sirve dos veces | Se compara el número de operación y la huella de la imagen (`duplicate_operation`) | Evita fraudes |
 
 ---
@@ -42,10 +48,14 @@ Describir las tablas que usa el sistema, qué módulo es dueño de cada una y la
 
 | Módulo | Funciones (`fn_*`) |
 |---|---|
-| Catálogo | `fn_catalogo_canchas`, `fn_proponer_local`, `fn_reemplazar_propuesta`, `fn_retirar_propuesta`, `fn_mis_pendientes`, `fn_revisar_local` |
-| Cuentas | `fn_mi_perfil` |
-| Reservas | `fn_local_publico`, `fn_disponibilidad_local`, `fn_reservar`, `fn_mis_reservas`, `fn_cancelar_reserva` |
+| Catálogo | `fn_catalogo_canchas` (con servicios), `fn_proponer_local`, `fn_reemplazar_propuesta`, `fn_retirar_propuesta`, `fn_mis_pendientes`, `fn_revisar_local`, `fn_servicios_local` |
+| Cuentas | `fn_mi_perfil` (con estado y motivo de suspensión) |
+| Reservas | `fn_local_publico` (con servicios), `fn_disponibilidad_local`, `fn_reservar`, `fn_mis_reservas`, `fn_cancelar_reserva` |
 | Pagos | `fn_estado_pago`, `fn_config_ia`, `fn_registrar_pago`, `fn_pagos_por_revisar`, `fn_revisar_pago`, `fn_mis_locales_pago`, `fn_guardar_datos_pago` |
+| Agenda (010) | `fn_agenda_local`, `fn_reserva_manual`, `fn_gestionar_reserva`, `fn_bloquear_horario`, `fn_quitar_bloqueo` |
+| Locales (011, 012) | `fn_config_local`, `fn_guardar_local`, `fn_guardar_servicios`, `fn_guardar_cancha`, `fn_agregar_cancha`, `fn_quitar_cancha`, `fn_locales_admin`, `fn_asignar_dueno`, `fn_cambiar_estado_local` |
+| Usuarios (012) | `fn_usuarios_admin`, `fn_cambiar_rol`, `fn_cambiar_estado_usuario` |
+| Ayuda por WhatsApp (012) | `fn_ajustes_publicos` (cualquiera), `fn_guardar_ajustes` (admin) |
 
 Cada función corresponde a un método de un repositorio en `apps/web/src/modules/*/infraestructura/` (patrón Repository).
 

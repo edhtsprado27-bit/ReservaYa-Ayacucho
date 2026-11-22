@@ -59,6 +59,7 @@ Mostrar **ReservaYa Ayacucho como una sola caja**: quiénes lo usan y con qué s
 | ReservaYa Ayacucho | OpenRouter         | Envía la captura para leer monto, n.º de operación, fecha y destinatario | HTTPS/REST |
 | ReservaYa Ayacucho | OpenStreetMap      | Descarga las teselas del mapa                                          | HTTPS      |
 | Jugador            | Google Maps / Waze | Abre la ruta hasta el local desde el enlace «Cómo llegar»              | —          |
+| Jugador, dueño y admin | WhatsApp       | Abren un chat con el mensaje ya escrito desde los enlaces `wa.me` (local, reserva, «Ayuda») | —          |
 
 > En el nivel 1 no se indica el protocolo entre personas y sistema: eso se detalla en el nivel 2.
 
@@ -72,11 +73,12 @@ Mostrar **ReservaYa Ayacucho como una sola caja**: quiénes lo usan y con qué s
 | 2  | ReservaYa **no almacena datos bancarios**              | Solo guarda la imagen del comprobante (en un almacén privado) y el estado del pago                                                      |
 | 3  | El mapa usa **OpenStreetMap** y no Google Maps         | Google Maps Platform exige tarjeta de crédito; Google Maps y Waze se usan solo como enlaces de «Cómo llegar» (ADR-012)                  |
 | 4  | Los sistemas externos no se modifican                  | Son de terceros; ReservaYa se adapta a ellos (patrón Adapter)                                                                           |
+| 5  | ReservaYa **no se integra con la API de WhatsApp**     | Solo genera enlaces `wa.me`: la persona envía el mensaje desde su propio WhatsApp. Sin costo, sin claves y sin número de empresa (ADR-014) |
 
 ### Pendientes por definir
 
 | Tema                    | Detalle                                                                                                       |
 |-------------------------|---------------------------------------------------------------------------------------------------------------|
-| Avisos de reservas      | Hoy la cuenta usa el correo de Supabase Auth. Los avisos de reservas (correo o WhatsApp) se agregarán como sistema externo cuando se implementen |
+| Avisos de reservas      | Hoy la cuenta usa el correo de Supabase Auth. Los avisos automáticos de reservas irán por correo (RF10) como sistema externo; WhatsApp queda solo como enlaces (ADR-014) |
 
 ---
