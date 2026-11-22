@@ -9,6 +9,7 @@ export type LocalPropio = { id: string; nombre: string; estado: EstadoLocal };
 /** Todo cambio devuelve el slug del local: con él se refresca su página pública */
 export type Cambio = { id: string; slug: string };
 export type CambioCancha = Cambio & { fueraDeHorario: number };
+export type ServiciosGuardados = Cambio & { servicios: string[] };
 export type DuenoAsignado = Cambio & { estado: EstadoLocal; dueno: string; correo: string; ahoraEsDueno: boolean };
 export type EstadoCambiado = Cambio & { estado: EstadoLocal; reservasFuturas: number };
 
@@ -18,6 +19,8 @@ export interface LocalesRepositorio {
   /** Reglas de reserva, canchas, horario y precios de un local */
   config(localId: string): Promise<ConfigLocal>;
   guardarAjustes(localId: string, p: PedidoAjustes): Promise<Cambio>;
+  /** Reemplaza la lista de servicios del local (vestuarios, duchas...) */
+  guardarServicios(localId: string, servicios: string[]): Promise<ServiciosGuardados>;
   guardarCancha(canchaId: string, p: PedidoCancha): Promise<CambioCancha>;
   agregarCancha(localId: string, p: PedidoNuevaCancha): Promise<Cambio>;
   quitarCancha(canchaId: string): Promise<Cambio>;

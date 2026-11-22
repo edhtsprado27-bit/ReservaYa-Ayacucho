@@ -1,6 +1,7 @@
-// Conversión de lo que devuelven las funciones de PostgreSQL (011) a las
+// Conversión de lo que devuelven las funciones de PostgreSQL (011 y 012) a las
 // entidades del dominio. Capa: infraestructura.
 
+import { ordenarServicios } from "@/modules/catalogo/dominio/servicios";
 import type { CanchaConfig, ConfigLocal, DiaHorario, EstadoLocal, LocalAdmin } from "../dominio/configuracion";
 
 type Json = Record<string, unknown>;
@@ -50,6 +51,7 @@ export function aConfig(j: Json): ConfigLocal {
       adelantoPct: Number(l.adelanto_pct ?? 50),
       minutosApartado: Number(l.minutos_apartado ?? 15),
       horasCancelacion: Number(l.horas_cancelacion ?? 6),
+      servicios: ordenarServicios(Array.isArray(l.servicios) ? l.servicios : []),
     },
     canchas: lista(j.canchas).map(aCancha),
   };
@@ -67,4 +69,6 @@ export const aLocalAdmin = (f: Json): LocalAdmin => ({
   duenoCorreo: txt(f.dueno_correo),
   canchas: Number(f.canchas ?? 0),
   reservasFuturas: Number(f.reservas_futuras ?? 0),
+  duenoTelefono: txt(f.dueno_telefono),
+  whatsapp: txt(f.whatsapp),
 });

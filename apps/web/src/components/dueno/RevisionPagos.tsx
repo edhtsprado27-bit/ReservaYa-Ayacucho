@@ -12,6 +12,7 @@ import {
   RESULTADO_CORTO,
   type PagoPorRevisar,
 } from "@/modules/pagos/dominio/pago";
+import { enlaceWhatsApp, MENSAJES_WHATSAPP } from "@/modules/compartido/dominio/whatsapp";
 import { fechaLarga, horaLima, soles } from "@/modules/reservas/dominio/tiempo";
 
 const MOTIVOS = ["No me llegó el pago", "El monto está incompleto", "La captura no es válida"];
@@ -110,6 +111,19 @@ export default function RevisionPagos({ inicial }: { inicial: PagoPorRevisar[] }
                       <>
                         {" · "}
                         <a href={`tel:${p.telefonoJugador}`}>{celularTexto(p.telefonoJugador)}</a>
+                        {enlaceWhatsApp(p.telefonoJugador) && (
+                          <>
+                            {" · "}
+                            <a
+                              className="enlace-wsp"
+                              href={enlaceWhatsApp(p.telefonoJugador, MENSAJES_WHATSAPP.pagoAlJugador(p.jugador, p.local, p.codigo)) ?? undefined}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              WhatsApp
+                            </a>
+                          </>
+                        )}
                       </>
                     ) : null}
                   </span>

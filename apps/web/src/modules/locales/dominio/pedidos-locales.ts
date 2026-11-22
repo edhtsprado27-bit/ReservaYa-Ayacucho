@@ -2,6 +2,7 @@
 // las acciones del administrador. Funciones puras: si algo no tiene la forma
 // esperada, error 400 claro. Los rangos y permisos los vuelve a revisar la base.
 
+import { esServicio, ordenarServicios, type CodigoServicio } from "@/modules/catalogo/dominio/servicios";
 import { ErrorAplicacion } from "@/modules/compartido/dominio/error-aplicacion";
 import { esDeporte, esHoraMedia, type CodigoDeporte, type DiaHorario } from "./configuracion";
 
@@ -95,6 +96,21 @@ export function validarCancha(x: unknown): PedidoCancha {
 export function validarNuevaCancha(x: unknown): PedidoNuevaCancha {
   const o = comoObjeto(x);
   return { nombre: texto(o.nombre, 60), deporte: deporte(o.deporte), precio: soles(o.precio) };
+}
+
+/**
+ * Servicios del local: { "servicios": ["vestuarios", "duchas"] }.
+ * Lista vacía = el local no ofrece ninguno. Un código desconocido es un error
+ * (no se ignora en silencio).
+ */
+export function validarServicios(x: unknown): CodigoServicio[] {
+  const lista = comoObjeto(x).servicios;
+  if (!Array.isArray(lista) || lista.length > 20) throw datosLocalInvalidos();
+  const codigos = lista.map((s) => (typeof s === "string" ? s.trim().toLowerCase() : s));
+  if (!codigos.every(esServicio)) {
+    throw new ErrorAplicacion("SERVICIO_INVALIDO", 400, "Uno de los servicios no está en la lista. Recarga la página.");
+  }
+  return ordenarServicios(codigos);
 }
 
 export function validarPedidoAdmin(x: unknown): PedidoAdmin {

@@ -61,6 +61,8 @@ export type AjustesLocal = {
   adelantoPct: number;
   minutosApartado: number;
   horasCancelacion: number;
+  /** Servicios marcados (códigos de catalogo/dominio/servicios.ts) */
+  servicios: string[];
 };
 
 export type ConfigLocal = { local: AjustesLocal; canchas: CanchaConfig[] };
@@ -78,6 +80,9 @@ export type LocalAdmin = {
   duenoCorreo: string | null;
   canchas: number;
   reservasFuturas: number;
+  /** Celular del dueño (de su cuenta) y WhatsApp del local, para escribirles */
+  duenoTelefono: string | null;
+  whatsapp: string | null;
 };
 
 // Opciones de los formularios (las mismas reglas que valida la base)

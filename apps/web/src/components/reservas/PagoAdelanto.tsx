@@ -132,7 +132,9 @@ export default function PagoAdelanto({ reservaId, adelanto, yape, plin, titular,
           {sinCuentas ? (
             <p className="meta">
               Este local todavía no registró su Yape o Plin.
-              {telefonoLocal ? ` Llama al ${telefonoLocal} para que te lo den.` : " Llama al local para que te lo den."}
+              {telefonoLocal
+                ? ` Escríbele por WhatsApp (botón “Escribir al local”, abajo) o llama al ${telefonoLocal} para que te lo den.`
+                : " Llama al local para que te lo den."}
             </p>
           ) : (
             <>

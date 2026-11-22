@@ -138,6 +138,13 @@ export default function LoginEstadio({
       if (modo === "ingresar") {
         const { error } = await supabase.auth.signInWithPassword({ email, password: f.clave });
         if (error) return setMsg(traducirError(error));
+        // Si el administrador suspendió la cuenta, se muestra el motivo (RF08)
+        const { data: perfil } = await supabase.rpc("fn_mi_perfil");
+        if (Array.isArray(perfil) && perfil[0]?.estado === "suspended") {
+          setMsg("Tu cuenta está suspendida.");
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+          return window.location.assign("/cuenta-suspendida");
+        }
         setMsg("¡Listo! Entrando…");
         return entrar();
       }

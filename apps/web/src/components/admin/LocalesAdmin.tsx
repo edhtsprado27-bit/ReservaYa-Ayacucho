@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { enlaceWhatsApp, MENSAJES_WHATSAPP } from "@/modules/compartido/dominio/whatsapp";
 import { llamarApi } from "@/modules/compartido/presentacion/llamar-api";
 import { ESTADO_LOCAL_TEXTO, type LocalAdmin } from "@/modules/locales/dominio/configuracion";
 
@@ -50,6 +51,8 @@ export default function LocalesAdmin({ locales }: { locales: LocalAdmin[] }) {
       {locales.map((l) => {
         const aqui = abierto?.id === l.id ? abierto.tipo : null;
         const futuras = l.reservasFuturas === 1 ? "1 reserva pendiente" : `${l.reservasFuturas} reservas pendientes`;
+        // Al dueño: su celular de la cuenta; si no tiene, el WhatsApp del local
+        const wsp = l.sinDueno ? null : enlaceWhatsApp(l.duenoTelefono ?? l.whatsapp, MENSAJES_WHATSAPP.adminAlDueno(l.duenoNombre, l.nombre));
         return (
           <li key={l.id} className="local-admin">
             <div className="local-admin-cabeza">
@@ -78,6 +81,11 @@ export default function LocalesAdmin({ locales }: { locales: LocalAdmin[] }) {
                 <Link className="boton boton--claro boton--chico" href={`/dueno/configuracion?local=${l.id}`}>
                   Configurar
                 </Link>
+                {wsp && (
+                  <a className="boton boton--wsp boton--chico" href={wsp} target="_blank" rel="noopener noreferrer">
+                    WhatsApp al dueño
+                  </a>
+                )}
                 <button type="button" className="boton boton--claro boton--chico" onClick={() => abrir(l.id, "dueno")}>
                   {l.sinDueno ? "Asignar dueño" : "Cambiar dueño"}
                 </button>

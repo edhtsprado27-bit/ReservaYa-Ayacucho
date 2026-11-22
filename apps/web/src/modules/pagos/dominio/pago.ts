@@ -114,6 +114,6 @@ export function resultadoParaJugador(r: ResultadoLectura | null, leido: Leido | 
   }
 }
 
-/** 966123456 -> "966 123 456" */
+/** 966123456 o +51966123456 -> "966 123 456" */
 export const celularTexto = (c: string | null | undefined) =>
-  c ? c.replace(/\D/g, "").replace(/^(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3") : "";
+  c ? c.replace(/\D/g, "").replace(/^51(?=9\d{8}$)/, "").replace(/^(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3") : "";

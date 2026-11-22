@@ -1,9 +1,10 @@
 // Gestión de locales con Supabase (patrón Repository). Siempre con la sesión
-// de quien pide: las funciones de PostgreSQL (011_configuracion_local.sql)
+// de quien pide: las funciones de PostgreSQL (011_configuracion_local.sql y 012)
 // comprueban que sea el dueño del local o el admin, y dejan cada cambio en audit_logs.
 
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ordenarServicios } from "@/modules/catalogo/dominio/servicios";
 import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
 import type { EstadoLocal, LocalAdmin } from "../dominio/configuracion";
 import type { Cambio, LocalesRepositorio, LocalPropio } from "../dominio/locales.repositorio";
@@ -48,6 +49,11 @@ export class SupabaseLocalesRepositorio implements LocalesRepositorio {
         p_cancelacion: p.horasCancelacion,
       }),
     );
+  }
+
+  async guardarServicios(localId: string, servicios: string[]) {
+    const d = await this.llamar("fn_guardar_servicios", { p_local: localId, p_servicios: servicios });
+    return { ...cambio(d), servicios: ordenarServicios(Array.isArray(d.servicios) ? d.servicios : []) };
   }
 
   async guardarCancha(canchaId: string, p: PedidoCancha) {

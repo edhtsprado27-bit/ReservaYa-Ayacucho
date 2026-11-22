@@ -21,6 +21,8 @@ export type CanchaBD = {
   telefono?: string;
   rating?: number;
   totalResenas?: number;
+  /** Códigos de los servicios del local (vestuarios, duchas...), ver ./servicios.ts */
+  servicios: string[];
 };
 
 // Lo que se envía al registrar una cancha con "+ Agregar cancha"

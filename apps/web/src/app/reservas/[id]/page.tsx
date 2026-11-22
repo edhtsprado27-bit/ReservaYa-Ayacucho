@@ -11,6 +11,7 @@ import PagoAdelanto from "@/components/reservas/PagoAdelanto";
 import RefrescarCada from "@/components/reservas/RefrescarCada";
 import { distritoAWeb } from "@/modules/catalogo/dominio/cancha";
 import { enlaceGoogleMaps } from "@/modules/catalogo/dominio/ubicacion";
+import { enlaceWhatsApp, MENSAJES_WHATSAPP } from "@/modules/compartido/dominio/whatsapp";
 import { crearClienteServidor } from "@/modules/compartido/infraestructura/supabase/cliente-servidor";
 import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
 import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
@@ -51,6 +52,7 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
   const pagado = r.pagado > 0 ? r.pagado : r.adelanto;
   const saldo = Math.max(0, Math.round((r.total - pagado) * 100) / 100);
   const telefono = r.telefono?.replace(/\D/g, "");
+  const whatsapp = enlaceWhatsApp(r.telefono, MENSAJES_WHATSAPP.sobreReserva(r.codigo, r.cancha, rangoTexto(r.inicio, r.fin)));
   const otraHora = `/cancha/${r.slug}`;
 
   return (
@@ -178,6 +180,11 @@ async function Detalle({ params }: PageProps<"/reservas/[id]">) {
             rel="noopener noreferrer"
           >
             Cómo llegar
+          </a>
+        )}
+        {whatsapp && (
+          <a className="boton boton--wsp" href={whatsapp} target="_blank" rel="noopener noreferrer">
+            Escribir al local
           </a>
         )}
         {telefono && (

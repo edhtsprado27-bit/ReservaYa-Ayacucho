@@ -11,6 +11,7 @@ import {
   validarCancha,
   validarNuevaCancha,
   validarPedidoAdmin,
+  validarServicios,
 } from "../dominio/pedidos-locales";
 
 const id = (x: string) => {
@@ -27,6 +28,10 @@ export const verConfiguracion = (repo: LocalesRepositorio, localId: string) => r
 /** Adelanto, apartado, cancelación, WhatsApp y dirección */
 export const guardarAjustesLocal = (repo: LocalesRepositorio, localId: string, datos: unknown) =>
   repo.guardarAjustes(id(localId), validarAjustes(datos));
+
+/** Servicios del local: vestuarios, duchas, estacionamiento... (RF01, RF03) */
+export const guardarServiciosLocal = (repo: LocalesRepositorio, localId: string, datos: unknown) =>
+  repo.guardarServicios(id(localId), validarServicios(datos));
 
 /** Nombre, deporte, horario por día, precio normal y de hora punta */
 export const guardarCanchaDelLocal = (repo: LocalesRepositorio, canchaId: string, datos: unknown) =>

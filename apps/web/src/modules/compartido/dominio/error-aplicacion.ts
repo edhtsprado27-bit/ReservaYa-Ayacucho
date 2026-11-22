@@ -28,7 +28,7 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   FALTA_MIGRACION: {
     mensaje:
-      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 011 en el SQL Editor.",
+      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 012 en el SQL Editor.",
     status: 502,
   },
   SIN_SESION: { mensaje: "Inicia sesión para continuar.", status: 401 },
@@ -139,6 +139,20 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
     status: 404,
   },
   CORREO_ES_ADMIN: { mensaje: "Esa cuenta es de administrador: ya puede ver todos los locales.", status: 400 },
+  // Servicios, usuarios y WhatsApp de ayuda (paso 9)
+  SERVICIO_INVALIDO: { mensaje: "Uno de los servicios no está en la lista. Recarga la página.", status: 400 },
+  FILTRO_INVALIDO: { mensaje: "Ese filtro de cuentas no existe.", status: 400 },
+  CUENTA_NO_ENCONTRADA: { mensaje: "Esa cuenta ya no existe. Recarga la página.", status: 404 },
+  USUARIO_ES_ADMIN: {
+    mensaje: "Las cuentas de administrador no se cambian desde aquí (así nadie se quita el acceso por error).",
+    status: 403,
+  },
+  ROL_INVALIDO: { mensaje: "Elige jugador o dueño de cancha.", status: 400 },
+  DUENO_CON_LOCALES: {
+    mensaje: "Esta cuenta tiene locales a su nombre. Asígnalos a otra cuenta antes de quitarle el rol de dueño.",
+    status: 409,
+  },
+  CUENTA_SIN_CAMBIO: { mensaje: "La cuenta ya está en ese estado. Recarga la página.", status: 409 },
   DESCONOCIDO: { mensaje: "Ocurrió un error con la base de datos. Inténtalo de nuevo.", status: 500 },
 };
 

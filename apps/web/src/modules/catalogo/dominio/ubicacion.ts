@@ -29,6 +29,7 @@ export type Cancha = {
   techada: boolean;
   precioDesde?: number; // soles por hora; lo define el dueño
   telefono?: string;
+  servicios?: string[]; // vestuarios, duchas... (ver ./servicios.ts)
 };
 
 // Plaza de Armas de Huamanga: centro del mapa y punto de partida

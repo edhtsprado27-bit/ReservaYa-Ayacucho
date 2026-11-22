@@ -28,6 +28,8 @@ export type LocalPublico = {
   adelantoPct: number;
   minutosApartado: number;
   horasCancelacion: number;
+  /** Servicios del local (códigos de catalogo/dominio/servicios.ts) */
+  servicios: string[];
   canchas: CanchaLocal[];
 };
 

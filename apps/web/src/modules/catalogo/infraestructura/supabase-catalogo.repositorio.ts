@@ -6,6 +6,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { traducirErrorSupabase } from "@/modules/compartido/infraestructura/supabase/traducir-error";
 import { deporteABD, deporteAWeb, distritoAWeb, type CanchaBD, type DeporteWeb, type NuevaCancha } from "../dominio/cancha";
+import { ordenarServicios } from "../dominio/servicios";
 import type {
   CanchaPublicada,
   Catalogo,
@@ -30,6 +31,7 @@ export type FilaCatalogo = {
   telefono: string | null;
   rating: number | string | null;
   total_resenas: number | null;
+  servicios?: string[] | null; // desde 012
 };
 
 /** Fila de la base de datos -> entidad del dominio */
@@ -50,6 +52,7 @@ export function filaACancha(f: FilaCatalogo): CanchaBD {
     telefono: f.telefono ?? undefined,
     rating: f.rating == null ? undefined : Number(f.rating),
     totalResenas: f.total_resenas ?? undefined,
+    servicios: ordenarServicios(f.servicios),
   };
 }
 

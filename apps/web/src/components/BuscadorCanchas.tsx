@@ -14,6 +14,7 @@ import {
   type Distrito,
 } from "@/modules/catalogo/dominio/ubicacion";
 import type { CanchaBD, NuevaCancha } from "@/modules/catalogo/dominio/cancha";
+import { nombreServicio, SERVICIOS, tieneServicios } from "@/modules/catalogo/dominio/servicios";
 import { puedeRegistrarCanchas, type Perfil } from "@/modules/cuentas/dominio/roles";
 import { editarPropuesta, proponerCancha, quitarPropuesta, useCanchas } from "@/modules/catalogo/presentacion/useCanchas";
 
@@ -52,6 +53,7 @@ function aCancha(c: CanchaBD): Cancha | null {
     techada: c.techada,
     precioDesde: c.precioDesde,
     telefono: c.telefono,
+    servicios: c.servicios,
   };
 }
 
@@ -63,6 +65,10 @@ export default function BuscadorCanchas({ perfil, abrirAgregar = false }: { perf
   const [texto, setTexto] = useState("");
   const [distrito, setDistrito] = useState<Distrito | "Todos">("Todos");
   const [soloTechadas, setSoloTechadas] = useState(false);
+  // Servicios pedidos: se muestran los locales que tienen TODOS los marcados
+  const [conServicios, setConServicios] = useState<string[]>([]);
+  const alternarServicio = (codigo: string) =>
+    setConServicios((actual) => (actual.includes(codigo) ? actual.filter((s) => s !== codigo) : [...actual, codigo]));
   // null = automático: los ejemplos se muestran solo mientras no haya canchas reales
   const [verEjemplos, setVerEjemplos] = useState<boolean | null>(null);
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
@@ -118,10 +124,11 @@ export default function BuscadorCanchas({ perfil, abrirAgregar = false }: { perf
     return todas
       .filter((c) => distrito === "Todos" || c.distrito === distrito)
       .filter((c) => !soloTechadas || c.techada)
+      .filter((c) => tieneServicios(c.servicios, conServicios))
       .filter((c) => !q || normalizar(`${c.nombre} ${c.distrito} ${c.direccion}`).includes(q))
       .map((c) => ({ ...c, km: distanciaKm(origen, c) }))
       .sort((a, b) => a.km - b.km);
-  }, [todas, texto, distrito, soloTechadas, origen]);
+  }, [todas, texto, distrito, soloTechadas, conServicios, origen]);
 
   const cercaDeMi = () => {
     if (!("geolocation" in navigator)) {
@@ -257,6 +264,27 @@ export default function BuscadorCanchas({ perfil, abrirAgregar = false }: { perf
         </label>
       </div>
 
+      <div className="filtro-servicios" role="group" aria-label="Servicios del local">
+        <span>Con:</span>
+        {SERVICIOS.map((s) => (
+          <button
+            key={s.codigo}
+            type="button"
+            className="chip"
+            aria-pressed={conServicios.includes(s.codigo)}
+            onClick={() => alternarServicio(s.codigo)}
+            title={s.nombre}
+          >
+            {s.corto}
+          </button>
+        ))}
+        {conServicios.length > 0 && (
+          <button type="button" className="enlace-boton" onClick={() => setConServicios([])}>
+            Quitar filtros
+          </button>
+        )}
+      </div>
+
       {catalogo.error && (
         <p className="aviso aviso--error" role="alert">
           No se pudieron cargar las canchas. {catalogo.error}{" "}
@@ -339,6 +367,13 @@ export default function BuscadorCanchas({ perfil, abrirAgregar = false }: { perf
                     <span className="meta">{c.distrito} · {c.deportes.join(", ")}{c.techada ? " · techada" : ""}</span>
                     <span className="meta">{c.direccion}{c.telefono ? ` · ${c.telefono}` : ""}</span>
                     {c.precioDesde ? <span className="precio">Desde S/ {c.precioDesde}/h</span> : null}
+                    {c.servicios && c.servicios.length > 0 && (
+                      <span className="servicios servicios--chicos">
+                        {c.servicios.map((s) => (
+                          <span key={s}>{nombreServicio(s)}</span>
+                        ))}
+                      </span>
+                    )}
                     {c.id.startsWith("ejemplo") && <span className="etiqueta">Ejemplo</span>}
                     {pendiente && <span className="etiqueta etiqueta--revision">En revisión</span>}
                   </button>

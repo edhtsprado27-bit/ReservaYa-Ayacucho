@@ -15,6 +15,7 @@ import { verConfiguracion, verMisLocales } from "@/modules/locales/aplicacion/lo
 import type { ConfigLocal as Config } from "@/modules/locales/dominio/configuracion";
 import type { LocalPropio } from "@/modules/locales/dominio/locales.repositorio";
 import { localesConSesion } from "@/modules/locales/infraestructura/composicion";
+import { ajustesPublicos } from "@/modules/soporte/infraestructura/composicion";
 
 export const metadata: Metadata = { title: "Configurar local · Panel del dueño · ReservaYa Ayacucho" };
 
@@ -46,7 +47,8 @@ async function Contenido({ searchParams }: PageProps<"/dueno/configuracion">) {
       </p>
     );
   }
-  return <ConfigLocal key={config.local.id} config={config} locales={locales} />;
+  const { whatsappSoporte } = await ajustesPublicos();
+  return <ConfigLocal key={config.local.id} config={config} locales={locales} whatsappSoporte={whatsappSoporte} />;
 }
 
 export default function ConfiguracionPage(props: PageProps<"/dueno/configuracion">) {

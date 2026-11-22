@@ -1,4 +1,4 @@
-// Página de un local: datos, cómo llegar y la grilla para reservar.
+// Página de un local: datos, servicios, cómo llegar, WhatsApp y la grilla para reservar.
 // /cancha/<slug>?fecha=AAAA-MM-DD&cancha=<id>&desde=HH:MM&hasta=HH:MM (lo último es opcional)
 
 import type { Metadata } from "next";
@@ -7,7 +7,9 @@ import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
 import ReservaCancha from "@/components/reservas/ReservaCancha";
 import { distritoAWeb } from "@/modules/catalogo/dominio/cancha";
+import { nombreServicio } from "@/modules/catalogo/dominio/servicios";
 import { enlaceGoogleMaps, enlaceWaze } from "@/modules/catalogo/dominio/ubicacion";
+import { enlaceWhatsApp, MENSAJES_WHATSAPP } from "@/modules/compartido/dominio/whatsapp";
 import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
 import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
 import { verLocal } from "@/modules/reservas/aplicacion/reservas.casos-de-uso";
@@ -40,6 +42,7 @@ async function Ficha({ params, searchParams }: PageProps<"/cancha/[slug]">) {
   }
 
   const telefono = local.telefono?.replace(/\D/g, "");
+  const whatsapp = enlaceWhatsApp(local.telefono, MENSAJES_WHATSAPP.consultaLocal(local.nombre));
   return (
     <>
       <div className="titulo">
@@ -49,7 +52,22 @@ async function Ficha({ params, searchParams }: PageProps<"/cancha/[slug]">) {
           {local.referencia ? ` (${local.referencia})` : ""}
         </p>
       </div>
+      {local.servicios.length > 0 && (
+        <section className="ficha-servicios" aria-labelledby="t-servicios">
+          <h2 id="t-servicios">Servicios del local</h2>
+          <ul className="servicios">
+            {local.servicios.map((s) => (
+              <li key={s}>{nombreServicio(s)}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="ficha-acciones">
+        {whatsapp && (
+          <a className="boton boton--wsp" href={whatsapp} target="_blank" rel="noopener noreferrer">
+            Escribir por WhatsApp
+          </a>
+        )}
         <a className="boton boton--claro" href={enlaceGoogleMaps(local)} target="_blank" rel="noopener noreferrer">
           Cómo llegar
         </a>

@@ -313,3 +313,37 @@ a.boton { display: inline-flex; align-items: center; justify-content: center; te
 .local-admin { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--linea); border-radius: 12px; }
 .local-admin-cabeza { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
 .local-admin .boton--chico { display: inline-flex; align-items: center; text-decoration: none; }
+
+/* Paso 9: servicios del local, gestión de usuarios y WhatsApp (RF15) */
+.boton--wsp { background: #0e7a3f; color: #fff; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+.boton--wsp:hover { background: #0b6634; }
+.enlace-wsp, .meta a.enlace-wsp, .aviso a.enlace-wsp { color: #0e7a3f; font-weight: 700; }
+.ayuda-wsp { position: fixed; right: 16px; bottom: 16px; z-index: 1000; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px 0 14px; border-radius: 999px; background: #0e7a3f; color: #fff; font-weight: 700; text-decoration: none; box-shadow: 0 6px 18px rgba(0, 0, 0, .25); }
+.ayuda-wsp:hover { background: #0b6634; }
+@media (max-width: 640px) { .ayuda-wsp { right: 12px; bottom: 12px; padding: 0 14px; } .ayuda-wsp span { display: none; } }
+@media print { .ayuda-wsp { display: none; } }
+.servicios { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.servicios > * { padding: 3px 10px; border-radius: 999px; background: #e7f2ea; color: #17603a; font-size: 14px; font-weight: 600; }
+.servicios--chicos > * { padding: 1px 8px; font-size: 12px; }
+.ficha-servicios { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; }
+.ficha-servicios h2 { font-size: 16px; margin: 0; }
+.filtro-servicios { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.filtro-servicios > span { font-size: 14px; font-weight: 700; color: var(--tenue); margin-right: 2px; }
+/* En el celular los servicios van en una sola fila que se desliza (no empujan el mapa hacia abajo) */
+@media (max-width: 640px) {
+  .filtro-servicios { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+  .filtro-servicios > * { flex: none; }
+}
+.servicios-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 4px 12px; margin: 0; padding: 0; border: 0; }
+.cuenta-suspendida { background: #fde4e1; color: #8a1c10; border-color: rgba(138, 28, 16, .35); }
+.usuarios-busqueda { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.usuarios-busqueda .campo { flex: 1 1 220px; }
+.usuario-admin { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--linea); border-radius: 12px; }
+.usuario-admin--suspendido { border-color: rgba(138, 28, 16, .45); background: #fff8f7; }
+.usuario-admin-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 10px; align-items: center; }
+.usuario-admin .boton--chico { display: inline-flex; align-items: center; text-decoration: none; }
+.estado--usuario-active { background: #dcf3e4; color: #17603a; }
+.estado--usuario-suspended { background: #fde4e1; color: #8a1c10; }
+.enlace-panel { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+.enlace-panel strong { color: var(--naranja-texto); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

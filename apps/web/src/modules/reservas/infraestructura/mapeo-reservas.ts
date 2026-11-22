@@ -2,6 +2,7 @@
 // entidades del dominio. Capa: infraestructura.
 
 import { deporteAWeb } from "@/modules/catalogo/dominio/cancha";
+import { ordenarServicios } from "@/modules/catalogo/dominio/servicios";
 import type { EstadoReserva, EstadoTurno, LocalPublico, Reserva, ReservaCreada, Turno } from "../dominio/reserva";
 
 type Json = Record<string, unknown>;
@@ -23,6 +24,7 @@ export function aLocal(j: Json): LocalPublico {
     adelantoPct: Number(j.adelanto_pct ?? 50),
     minutosApartado: Number(j.minutos_apartado ?? 15),
     horasCancelacion: Number(j.horas_cancelacion ?? 6),
+    servicios: ordenarServicios(Array.isArray(j.servicios) ? j.servicios : []),
     canchas: canchas.map((c) => ({
       id: String(c.id),
       nombre: String(c.nombre),

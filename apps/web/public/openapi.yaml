@@ -36,6 +36,10 @@ tags:
     description: Reglas de reserva, canchas, horario de atención y precios (módulo locales)
   - name: Administración
     description: Locales publicados, asignar el dueño real, suspender y reactivar (módulo locales, solo admin)
+  - name: Usuarios
+    description: Buscar cuentas, cambiar entre jugador y dueño, suspender y reactivar (módulo usuarios, solo admin)
+  - name: Ayuda por WhatsApp
+    description: Número de WhatsApp de ayuda de la plataforma (módulo soporte, RF15). Son enlaces wa.me, sin API de pago
 
 paths:
   /api/canchas:
@@ -234,6 +238,119 @@ paths:
                   locales:
                     type: array
                     items: { $ref: "#/components/schemas/LocalAdmin" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/admin/usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Buscar cuentas (solo admin)
+      description: |
+        Hasta 100 cuentas, las más recientes primero. No incluye la cuenta interna de la plataforma.
+        La búsqueda compara el nombre (sin tildes), el correo y el celular (desde 3 dígitos).
+      operationId: listarUsuarios
+      security: [{ sesion: [] }]
+      parameters:
+        - name: buscar
+          in: query
+          schema: { type: string, maxLength: 80, example: "rosa" }
+        - name: filtro
+          in: query
+          schema: { type: string, enum: [todos, jugadores, duenos, admins, suspendidos], default: todos }
+      responses:
+        "200":
+          description: Lista de cuentas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  usuarios:
+                    type: array
+                    items: { $ref: "#/components/schemas/UsuarioAdmin" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/admin/usuarios/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [Usuarios]
+      summary: Cambiar el rol, suspender o reactivar una cuenta (solo admin)
+      description: |
+        - `cambiar_rol`: entre `jugador` y `dueno`. Un dueño con locales a su nombre no pasa a jugador (`409 DUENO_CON_LOCALES`).
+        - `suspender`: la cuenta no puede ingresar ni reservar; ve el `motivo` en /cuenta-suspendida. Sus reservas y
+          locales siguen en pie (la respuesta dice cuántos tiene).
+        - `reactivar`: vuelve a estar activa.
+        Las cuentas de administrador no se cambian (`403 USUARIO_ES_ADMIN`). Cada cambio queda en `audit_logs`.
+      operationId: gestionarUsuario
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion]
+              properties:
+                accion: { type: string, enum: [cambiar_rol, suspender, reactivar] }
+                rol: { type: string, enum: [jugador, dueno], description: "Obligatorio al cambiar el rol" }
+                motivo: { type: string, minLength: 3, maxLength: 300, description: "Obligatorio al suspender" }
+      responses:
+        "200":
+          description: Hecho
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  usuario:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      rol: { type: string, enum: [jugador, dueno], description: "Al cambiar el rol" }
+                      cambio: { type: boolean, description: "false si ya tenía ese rol" }
+                      estado: { type: string, enum: [active, suspended], description: "Al suspender o reactivar" }
+                      reservasFuturas: { type: integer }
+                      localesPublicados: { type: integer }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /api/admin/ajustes:
+    put:
+      tags: [Ayuda por WhatsApp]
+      summary: Guardar el WhatsApp de ayuda de la plataforma (solo admin)
+      description: |
+        Sale en el botón "Ayuda" de todas las páginas (enlace `https://wa.me/51<celular>`). Vacío o `null` lo quita.
+        Se guarda como `+51` + 9 dígitos; al guardarlo se renueva la caché (`use cache`, etiqueta `ajustes-publicos`).
+      operationId: guardarAjustesPlataforma
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [whatsappSoporte]
+              properties:
+                whatsappSoporte: { type: string, nullable: true, example: "966 123 456" }
+      responses:
+        "200":
+          description: Guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  ajustes:
+                    type: object
+                    properties:
+                      whatsappSoporte: { type: string, nullable: true, example: "+51966123456" }
+        "400": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
 
   /api/disponibilidad:
@@ -686,6 +803,51 @@ paths:
         "403": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
 
+  /api/dueno/locales/{id}/servicios:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      tags: [Configuración del local]
+      summary: Marcar los servicios del local (vestuarios, duchas, estacionamiento…)
+      description: |
+        Reemplaza la lista completa (`[]` = ninguno). Un código que no está en la lista responde `400 SERVICIO_INVALIDO`.
+        La ficha pública y el catálogo del mapa (filtro "Con:") se renuevan al instante.
+      operationId: guardarServiciosLocal
+      security: [{ sesion: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [servicios]
+              properties:
+                servicios:
+                  type: array
+                  items: { $ref: "#/components/schemas/CodigoServicio" }
+                  example: [vestuarios, duchas, estacionamiento]
+      responses:
+        "200":
+          description: Guardados
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  local:
+                    allOf:
+                      - $ref: "#/components/schemas/Cambio"
+                      - type: object
+                        properties:
+                          servicios:
+                            type: array
+                            items: { $ref: "#/components/schemas/CodigoServicio" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
   /api/dueno/locales/{id}/canchas:
     parameters:
       - $ref: "#/components/parameters/Id"
@@ -857,6 +1019,14 @@ components:
         telefono: { type: string }
         rating: { type: number }
         totalResenas: { type: integer }
+        servicios:
+          type: array
+          description: Servicios del local, en el orden de la lista
+          items: { $ref: "#/components/schemas/CodigoServicio" }
+
+    CodigoServicio:
+      type: string
+      enum: [vestuarios, duchas, banos, estacionamiento, cafeteria, tribuna, iluminacion, balon_incluido]
 
     NuevaCancha:
       type: object
@@ -1028,6 +1198,9 @@ components:
             adelantoPct: { type: integer }
             minutosApartado: { type: integer }
             horasCancelacion: { type: integer }
+            servicios:
+              type: array
+              items: { $ref: "#/components/schemas/CodigoServicio" }
         canchas:
           type: array
           items:
@@ -1066,3 +1239,21 @@ components:
         duenoCorreo: { type: string, nullable: true }
         canchas: { type: integer }
         reservasFuturas: { type: integer }
+        duenoTelefono: { type: string, nullable: true, description: "Celular de la cuenta del dueño (para escribirle por WhatsApp)" }
+        whatsapp: { type: string, nullable: true, description: "WhatsApp del local" }
+
+    UsuarioAdmin:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string, example: "Rosa Quispe" }
+        correo: { type: string, nullable: true }
+        telefono: { type: string, nullable: true }
+        rol: { type: string, enum: [jugador, dueno, admin] }
+        estado: { type: string, enum: [active, suspended] }
+        motivo: { type: string, nullable: true, description: "Motivo de la suspensión" }
+        creado: { type: string, format: date-time }
+        ultimoIngreso: { type: string, format: date-time, nullable: true }
+        locales: { type: integer, description: "Locales a su nombre (no rechazados)" }
+        reservas: { type: integer }
+        soyYo: { type: boolean, description: "true en la fila del admin que consulta" }

@@ -1,12 +1,15 @@
 "use client";
 
 // Configuración del local: reglas de reserva (adelanto, apartado, cancelación),
-// contacto y, por cada cancha, nombre, deporte, horario por día y precios.
+// contacto, servicios (vestuarios, duchas...) y, por cada cancha, nombre,
+// deporte, horario por día y precios.
 // Todo lo valida la base de datos; aquí solo se arma la pantalla.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { SERVICIOS } from "@/modules/catalogo/dominio/servicios";
+import { enlaceWhatsApp, MENSAJES_WHATSAPP } from "@/modules/compartido/dominio/whatsapp";
 import { llamarApi, type RespuestaApi } from "@/modules/compartido/presentacion/llamar-api";
 import {
   DEPORTES,
@@ -65,9 +68,12 @@ function useEnvio() {
   return { enviando, aviso, setAviso, enviar };
 }
 
-export default function ConfigLocal({ config, locales }: { config: Config; locales: LocalPropio[] }) {
+type Props = { config: Config; locales: LocalPropio[]; whatsappSoporte?: string | null };
+
+export default function ConfigLocal({ config, locales, whatsappSoporte = null }: Props) {
   const router = useRouter();
   const { local, canchas } = config;
+  const ayuda = enlaceWhatsApp(whatsappSoporte, MENSAJES_WHATSAPP.localSuspendido(local.nombre));
   return (
     <div className="config">
       <div className="agenda-barra">
@@ -99,7 +105,15 @@ export default function ConfigLocal({ config, locales }: { config: Config; local
       {local.estado === "suspended" && (
         <p className="aviso aviso--error">
           El administrador suspendió este local{local.motivoEstado ? `: “${local.motivoEstado}”` : ""}. No aparece en el
-          mapa ni recibe reservas nuevas. Si crees que es un error, escribe al administrador.
+          mapa ni recibe reservas nuevas. Si crees que es un error,{" "}
+          {ayuda ? (
+            <a className="enlace-wsp" href={ayuda} target="_blank" rel="noopener noreferrer">
+              escribe al administrador por WhatsApp
+            </a>
+          ) : (
+            "escribe al administrador"
+          )}
+          .
         </p>
       )}
       {local.estado === "pending_review" && (
@@ -107,6 +121,8 @@ export default function ConfigLocal({ config, locales }: { config: Config; local
       )}
 
       <FormReglas key={local.id} config={config} />
+
+      <FormServicios key={`servicios-${local.id}`} localId={local.id} actuales={local.servicios} />
 
       {canchas.map((c, i) => (
         <FormCancha key={c.id} cancha={c} abierta={i === 0} unica={canchas.length === 1} />
@@ -202,6 +218,56 @@ function FormReglas({ config }: { config: Config }) {
         <div className="config-ancho config-pie">
           <button type="submit" className="boton boton--naranja" disabled={enviando}>
             {enviando ? "Guardando…" : "Guardar reglas"}
+          </button>
+          <AvisoTexto aviso={aviso} />
+        </div>
+      </form>
+    </section>
+  );
+}
+
+function FormServicios({ localId, actuales }: { localId: string; actuales: string[] }) {
+  const [marcados, setMarcados] = useState<string[]>(actuales);
+  const { enviando, aviso, enviar } = useEnvio();
+  const alternar = (codigo: string, si: boolean) =>
+    setMarcados((m) => (si ? [...m.filter((x) => x !== codigo), codigo] : m.filter((x) => x !== codigo)));
+
+  function guardar(e: FormEvent) {
+    e.preventDefault();
+    void enviar(
+      () => llamarApi<{ local: { servicios: string[] } }>(`/api/dueno/locales/${localId}/servicios`, "PUT", { servicios: marcados }),
+      (d) => ({
+        tipo: "ok",
+        texto: d.local.servicios.length
+          ? "Servicios guardados. Ya salen en tu ficha y en los filtros del mapa."
+          : "Guardado: tu local no muestra servicios.",
+      }),
+    );
+  }
+
+  return (
+    <section className="panel" aria-labelledby="t-servicios">
+      <h2 id="t-servicios">Servicios del local</h2>
+      <p className="meta">Marca lo que ofreces. Los jugadores lo ven en tu ficha y pueden filtrar el mapa por estos servicios.</p>
+      <form className="config-form" onSubmit={guardar}>
+        <fieldset className="servicios-form config-ancho">
+          <legend className="sr-only">Servicios</legend>
+          {SERVICIOS.map((s) => (
+            <label key={s.codigo} className="config-check">
+              <input
+                type="checkbox"
+                name="servicio"
+                value={s.codigo}
+                checked={marcados.includes(s.codigo)}
+                onChange={(e) => alternar(s.codigo, e.target.checked)}
+              />
+              {s.nombre}
+            </label>
+          ))}
+        </fieldset>
+        <div className="config-ancho config-pie">
+          <button type="submit" className="boton boton--naranja" disabled={enviando}>
+            {enviando ? "Guardando…" : "Guardar servicios"}
           </button>
           <AvisoTexto aviso={aviso} />
         </div>

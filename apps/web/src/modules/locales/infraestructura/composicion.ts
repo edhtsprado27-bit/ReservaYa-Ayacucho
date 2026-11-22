@@ -38,6 +38,9 @@ export class LocalesConVistasFrescas implements LocalesRepositorio {
   guardarAjustes(localId: string, p: PedidoAjustes) {
     return this.yRefrescar(this.repo.guardarAjustes(localId, p));
   }
+  guardarServicios(localId: string, servicios: string[]) {
+    return this.yRefrescar(this.repo.guardarServicios(localId, servicios));
+  }
   guardarCancha(canchaId: string, p: PedidoCancha) {
     return this.yRefrescar(this.repo.guardarCancha(canchaId, p));
   }

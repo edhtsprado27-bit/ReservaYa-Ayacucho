@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import Cabecera from "@/components/Cabecera";
+import AjustesSoporte from "@/components/admin/AjustesSoporte";
 import LocalesAdmin from "@/components/admin/LocalesAdmin";
 import ListaRevision from "@/components/cuenta/ListaRevision";
 import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
@@ -12,6 +14,7 @@ import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/
 import { verLocalesAdmin } from "@/modules/locales/aplicacion/locales.casos-de-uso";
 import type { LocalAdmin } from "@/modules/locales/dominio/configuracion";
 import { localesConSesion } from "@/modules/locales/infraestructura/composicion";
+import { ajustesPublicos } from "@/modules/soporte/infraestructura/composicion";
 
 export const metadata: Metadata = { title: "Administrador · ReservaYa Ayacucho" };
 
@@ -21,12 +24,13 @@ async function Contenido() {
   if (perfil.rol !== "admin") redirect("/mi-cuenta");
 
   const db = await crearClienteServidor();
-  const [pendientes, resultado] = await Promise.all([
+  const [pendientes, resultado, ajustes] = await Promise.all([
     verPendientes(catalogoConSesion(db)).catch(() => []),
     verLocalesAdmin(localesConSesion(db)).then(
       (locales: LocalAdmin[]) => ({ locales, errorLocales: null }),
       (e: unknown) => ({ locales: [] as LocalAdmin[], errorLocales: aErrorAplicacion(e).message }),
     ),
+    ajustesPublicos(),
   ]);
   const { locales, errorLocales } = resultado;
   return (
@@ -40,6 +44,20 @@ async function Contenido() {
         <p className="meta">Asigna cada local a la cuenta de su dueño real, o suspende uno si hay un problema.</p>
         {errorLocales ? <p className="aviso aviso--error">{errorLocales}</p> : <LocalesAdmin locales={locales} />}
       </section>
+      <section className="panel" aria-labelledby="t-usuarios">
+        <Link className="enlace-panel" href="/admin/usuarios">
+          <div>
+            <h2 id="t-usuarios">Usuarios</h2>
+            <p className="meta">Busca cuentas, cambia entre jugador y dueño, suspende o reactiva.</p>
+          </div>
+          <strong aria-hidden="true">Gestionar →</strong>
+        </Link>
+      </section>
+      <section className="panel" aria-labelledby="t-ayuda">
+        <h2 id="t-ayuda">WhatsApp de ayuda</h2>
+        <p className="meta">Sale en el botón “Ayuda” de todas las páginas para que jugadores y dueños te escriban.</p>
+        <AjustesSoporte whatsappSoporte={ajustes.whatsappSoporte} />
+      </section>
     </>
   );
 }
@@ -51,7 +69,7 @@ export default function AdminPage() {
       <main className="envoltura pagina-angosta">
         <div className="titulo">
           <h1>Panel del administrador</h1>
-          <p>Revisa las canchas antes de publicarlas en el mapa y administra los locales publicados.</p>
+          <p>Revisa las canchas antes de publicarlas, administra los locales y las cuentas, y configura el WhatsApp de ayuda.</p>
         </div>
         <Suspense fallback={<p className="meta">Cargando canchas por aprobar…</p>}>
           <Contenido />

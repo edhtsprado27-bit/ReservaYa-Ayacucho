@@ -4,10 +4,17 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
-import { obtenerPerfil, ROL_TEXTO } from "@/modules/cuentas/infraestructura/perfil";
+import { obtenerCuenta, ROL_TEXTO } from "@/modules/cuentas/infraestructura/perfil";
 
 async function Cuenta() {
-  const perfil = await obtenerPerfil();
+  const { perfil, suspension } = await obtenerCuenta();
+  if (suspension) {
+    return (
+      <Link href="/cuenta-suspendida" className="cuenta-ingresar cuenta-suspendida">
+        Cuenta suspendida
+      </Link>
+    );
+  }
   if (!perfil) {
     return (
       <Link href="/login" className="cuenta-ingresar">

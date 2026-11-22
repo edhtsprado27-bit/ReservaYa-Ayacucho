@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import LoginEstadio, { type ModoLogin } from "@/components/login/LoginEstadio";
 import { destinoSeguro } from "@/modules/cuentas/dominio/destino";
-import { obtenerPerfil } from "@/modules/cuentas/infraestructura/perfil";
+import { obtenerCuenta } from "@/modules/cuentas/infraestructura/perfil";
 
 export const metadata: Metadata = { title: "Ingresar · ReservaYa Ayacucho" };
 
@@ -17,7 +17,10 @@ async function Login({ searchParams }: { searchParams: PageProps<"/login">["sear
   const next = destinoSeguro(texto(sp.next));
 
   // Si ya inició sesión, no tiene sentido mostrar el login
-  if (await obtenerPerfil()) redirect(next);
+  const cuenta = await obtenerCuenta();
+  if (cuenta.perfil) redirect(next);
+  // Cuenta suspendida por el admin: se explica el motivo y cómo pedir ayuda
+  if (cuenta.suspension) redirect("/cuenta-suspendida");
 
   const modo: ModoLogin = sp.modo === "registro" ? "registro" : sp.modo === "recuperar" ? "recuperar" : "ingresar";
   return <LoginEstadio next={next} modoInicial={modo} aviso={AVISOS[texto(sp.error) ?? ""]} />;

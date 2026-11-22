@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
+import { Suspense } from "react";
+import AyudaWhatsApp from "@/components/AyudaWhatsApp";
 import "./globals.css";
 
 const barlow = Barlow({ variable: "--fuente-texto", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -13,7 +15,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${barlow.variable} ${barlowCondensed.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Botón "Ayuda por WhatsApp" (RF15): llega después, sin frenar la página */}
+        <Suspense fallback={null}>
+          <AyudaWhatsApp />
+        </Suspense>
+      </body>
     </html>
   );
 }

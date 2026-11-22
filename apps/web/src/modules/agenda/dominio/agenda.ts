@@ -167,9 +167,5 @@ export function resumenDelDia(agenda: AgendaDia) {
   };
 }
 
-/** Celular para WhatsApp: 51 + 9 dígitos (o null si no parece un celular peruano) */
-export function enlaceWhatsApp(telefono: string | null, texto?: string): string | null {
-  const d = (telefono ?? "").replace(/\D/g, "").replace(/^51(?=9\d{8}$)/, "");
-  if (!/^9\d{8}$/.test(d)) return null;
-  return `https://wa.me/51${d}${texto ? `?text=${encodeURIComponent(texto)}` : ""}`;
-}
+/** Celular para WhatsApp: 51 + 9 dígitos (o null). Ahora vive en compartido (RF15) */
+export { enlaceWhatsApp } from "@/modules/compartido/dominio/whatsapp";
