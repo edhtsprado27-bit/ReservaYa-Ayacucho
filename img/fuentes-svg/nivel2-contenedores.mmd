@@ -4,7 +4,7 @@ flowchart TB
     subgraph limite["ReservaYa Ayacucho [Sistema]"]
         web["<b>Aplicación web</b><br/>[Next.js 16 · navegador]<br/>Mapa, grilla de horarios,<br/>paneles del dueño y admin,<br/>chat del asistente,<br/>enlaces de WhatsApp"]
         srv["<b>Servidor de la aplicación</b><br/>[Next.js 16 en Vercel]<br/>Páginas + API REST /api<br/>Monolito modular (9 módulos)"]
-        cdn["<b>CDN</b><br/>[Vercel]<br/>Catálogo 60 s · grilla 5 s"]
+        cdn["<b>CDN</b><br/>[Red de Vercel]<br/>www.reservaya-ayacucho.app<br/>Catálogo 60 s · grilla 5 s"]
         bd[("<b>Base de datos</b><br/>[PostgreSQL · Supabase]<br/>Funciones fn_*, RLS,<br/>EXCLUDE anti doble reserva")]
         auth[("<b>Autenticación</b><br/>[Supabase Auth]<br/>Cuentas y sesiones")]
         storage[("<b>Almacenamiento</b><br/>[Supabase Storage]<br/>Capturas (bucket privado)")]

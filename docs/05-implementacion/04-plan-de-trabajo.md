@@ -13,7 +13,7 @@
 | 3. Modelo de datos | SQL en Supabase | Esquema inicial y migraciones (`database/`) | Hecho |
 | 4. Desarrollo | VS Code + GitHub, Spec-Driven Development (`specs/`) | Código en `apps/web` organizado por módulos y capas | Primera versión funcional publicada (Sprint 2) |
 | 5. Pruebas | Jest, Playwright, GitHub Actions, k6 | Pruebas unitarias, de integración y E2E con cobertura y CI (`docs/06`); pruebas de carga | Hecho: 379 pruebas de Jest, 23 E2E y k6 |
-| 6. Despliegue | Vercel, Supabase, Upstash, Cloudflare | Sistema publicado (`docs/05/03`) | Publicado en Vercel; dominio propio pendiente; Redis pospuesto (ADR-013) |
+| 6. Despliegue | Vercel, Supabase, Upstash, Cloudflare | Sistema publicado (`docs/05/03`) | Publicado en Vercel con dominio propio `www.reservaya-ayacucho.app` (ADR-016); Redis pospuesto (ADR-013) |
 
 ---
 
@@ -31,7 +31,7 @@
 | 8 | Paneles del dueño y del admin | HU02, HU06, HU07 | Agenda del dueño (spec 009), precios, horarios y reglas desde la web, locales del admin (spec 010), pruebas E2E en el CI (spec 011) | Hecho (Sprint 2) |
 | 9 | Servicios, usuarios y WhatsApp | HU01, HU02, HU11, HU12 | Servicios del local y filtro del mapa (RF01, RF03), gestión de usuarios (RF08), contacto y ayuda por WhatsApp con enlaces `wa.me` (RF15, ADR-014) (spec 012) | Hecho (Sprint 2) |
 | 10 | Asistente con IA | HU08 | Chat que entiende lo que pide el jugador, muestra locales con horas libres reales y un enlace para reservarlas, y responde dudas; reglas primero e IA de OpenRouter solo cuando hace falta, con cupo diario (RF09, ADR-015) (spec 013) | Hecho (Sprint 2) |
-| 11 | Dominio, CDN y avisos por correo | HU10 | Dominio propio con Cloudflare; correos de confirmación, rechazo, cancelación y recordatorio (RF10) | Siguiente |
+| 11 | Dominio, CDN y avisos por correo | HU10 | Dominio propio `reservaya-ayacucho.app` (Name.com, GitHub Student Pack) con DNS directo a la CDN de Vercel (ADR-016) · correos de confirmación, rechazo, cancelación y recordatorio (RF10) | Dominio y CDN hechos (26/11/2026); correos siguiente |
 
 ---
 

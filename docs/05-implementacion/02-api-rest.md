@@ -1,6 +1,6 @@
 # API REST
 
-> **Proyecto:** ReservaYa Ayacucho · **Base:** `https://reservaya-ayacucho.vercel.app/api` · **Formato:** JSON  
+> **Proyecto:** ReservaYa Ayacucho · **Base:** `https://www.reservaya-ayacucho.app/api` (también `https://reservaya-ayacucho.vercel.app/api`) · **Formato:** JSON  
 > **Implementación:** Route Handlers de Next.js (`apps/web/src/app/api/**/route.ts`) · **Versión:** 2.2 (22/11/2026: asistente de canchas)  
 > **Autenticación:** sesión de Supabase Auth en cookies (la envía el navegador); la base de datos valida el rol con `auth.uid()`.
 
@@ -41,7 +41,7 @@
 | PUT | `/api/admin/ajustes` | Admin | WhatsApp de ayuda: `{ whatsappSoporte: "966123456" }` (`""` = quitar el botón) | `200 { ok, ajustes }` |
 | POST | `/api/asistente` | Público (la IA solo con sesión) | Chat del asistente: `{ mensaje, filtros?, historial? }` (mensaje de hasta 500 letras; se usan los últimos 6 mensajes del historial). Máximo 20 mensajes por minuto por IP | `200 { ok, respuesta: { texto, modo, aviso, filtros, entendido, recomendaciones, sugerencias } }` |
 
-> **Documentación interactiva:** https://reservaya-ayacucho.vercel.app/api-docs (Swagger UI). La especificación OpenAPI 3 está en `apps/web/public/openapi.yaml` y una prueba automática comprueba que describe exactamente las rutas del código.
+> **Documentación interactiva:** https://www.reservaya-ayacucho.app/api-docs (Swagger UI). La especificación OpenAPI 3 está en `apps/web/public/openapi.yaml` y una prueba automática comprueba que describe exactamente las rutas del código.
 
 ---
 
