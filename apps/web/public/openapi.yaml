@@ -19,8 +19,10 @@ info:
     name: ReservaYa Ayacucho
     url: https://github.com/edhtsprado27-bit/ReservaYa-Ayacucho
 servers:
+  - url: https://www.reservaya-ayacucho.app
+    description: Producción (dominio propio)
   - url: https://reservaya-ayacucho.vercel.app
-    description: Producción (Vercel)
+    description: Producción (dirección de Vercel)
   - url: http://localhost:3000
     description: Desarrollo local
 tags:

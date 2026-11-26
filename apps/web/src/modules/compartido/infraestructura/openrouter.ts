@@ -66,7 +66,7 @@ export async function pedirJSON<T>(p: PedidoJSON<T>): Promise<ResultadoJSON<T> |
         headers: {
           Authorization: `Bearer ${clave}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": process.env.NEXT_PUBLIC_SITIO_URL ?? "https://reservaya-ayacucho.vercel.app",
+          "HTTP-Referer": process.env.NEXT_PUBLIC_SITIO_URL ?? "https://www.reservaya-ayacucho.app",
           "X-Title": "ReservaYa Ayacucho",
         },
         body: JSON.stringify({
