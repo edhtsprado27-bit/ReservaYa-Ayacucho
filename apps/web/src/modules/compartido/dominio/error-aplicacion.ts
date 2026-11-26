@@ -28,7 +28,7 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
   },
   FALTA_MIGRACION: {
     mensaje:
-      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 012 en el SQL Editor.",
+      "Supabase no tiene las funciones nuevas. Ejecuta las migraciones 004 a 013 en el SQL Editor.",
     status: 502,
   },
   SIN_SESION: { mensaje: "Inicia sesión para continuar.", status: 401 },
@@ -153,6 +153,8 @@ export const MENSAJES: Record<string, { mensaje: string; status: number }> = {
     status: 409,
   },
   CUENTA_SIN_CAMBIO: { mensaje: "La cuenta ya está en ese estado. Recarga la página.", status: 409 },
+  // Asistente (paso 10)
+  DEMASIADOS_MENSAJES: { mensaje: "Vas muy rápido. Espera un momento y vuelve a escribir.", status: 429 },
   DESCONOCIDO: { mensaje: "Ocurrió un error con la base de datos. Inténtalo de nuevo.", status: 500 },
 };
 

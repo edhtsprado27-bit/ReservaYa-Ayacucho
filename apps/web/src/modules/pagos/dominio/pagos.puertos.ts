@@ -3,33 +3,15 @@
 // OpenRouter (IA). Gracias a esto el caso de uso "enviar comprobante" se puede
 // probar con implementaciones falsas y cambiar de proveedor sin tocarlo.
 
+import type { ConfigIA, RegistroIA } from "@/modules/compartido/dominio/ia";
 import type { EstadoPago, LocalPago, MetodoPago, PagoPorRevisar } from "./pago";
 import type { LecturaIA } from "./verificar";
 
 // ---------------------------------------------------------------------
 // IA (lectura del comprobante)
 // ---------------------------------------------------------------------
-export type ConfigIA = {
-  modelo: string;
-  respaldo: string[];
-  temperatura: number;
-  maxTokens: number;
-  prompt: string | null;
-  version: string | null;
-};
-
-/** Lo que se guarda de cada llamada a la IA (tabla ai_requests) */
-export type RegistroIA = {
-  modelo_pedido: string;
-  modelo_usado: string | null;
-  generacion: string | null;
-  tokens_entrada: number | null;
-  tokens_salida: number | null;
-  costo_usd: number | null;
-  latencia_ms: number;
-  estado: "success" | "fallback_used" | "error" | "timeout";
-  error: string | null;
-};
+// Tipos comunes de la IA (también los usa el asistente)
+export type { ConfigIA, RegistroIA } from "@/modules/compartido/dominio/ia";
 
 export type ResultadoOCR = { lectura: LecturaIA | null; ia: RegistroIA | null };
 

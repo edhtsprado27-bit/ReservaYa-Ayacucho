@@ -5,6 +5,7 @@
 
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { aConfigIA } from "@/modules/compartido/dominio/ia";
 import { aErrorAplicacion } from "@/modules/compartido/infraestructura/supabase/traducir-error";
 import type { EstadoPago, LocalPago, PagoPorRevisar } from "../dominio/pago";
 import type { ConfigIA, DatosPagoLocal, NuevoPago, PagoEnviado, PagosRepositorio } from "../dominio/pagos.puertos";
@@ -24,15 +25,8 @@ export class SupabasePagosRepositorio implements PagosRepositorio {
 
   async configIA(): Promise<ConfigIA | null> {
     const { data, error } = await this.db.rpc("fn_config_ia", { p_funcion: "receipt_ocr" });
-    if (error || !data) return null;
-    return {
-      modelo: String(data.modelo ?? ""),
-      respaldo: Array.isArray(data.respaldo) ? data.respaldo.map(String) : [],
-      temperatura: Number(data.temperatura ?? 0),
-      maxTokens: Number(data.max_tokens ?? 1000),
-      prompt: data.prompt ?? null,
-      version: data.version ?? null,
-    };
+    if (error) return null;
+    return aConfigIA(data);
   }
 
   async registrarPago(p: NuevoPago): Promise<PagoEnviado> {

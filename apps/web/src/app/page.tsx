@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import BuscadorCanchas from "@/components/BuscadorCanchas";
 import Cabecera from "@/components/Cabecera";
@@ -16,7 +17,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
       <main className="envoltura">
         <div className="titulo">
           <h1>Encuentra tu cancha en Huamanga</h1>
-          <p>Toca una cancha en el mapa o en la lista para ver cómo llegar.</p>
+          <p>
+            Toca una cancha en el mapa o en la lista para ver cómo llegar. ¿No sabes cuál elegir?{" "}
+            <Link href="/asistente">Pregúntale al asistente</Link>.
+          </p>
         </div>
         <Suspense fallback={<div className="mapa mapa--cargando">Cargando canchas…</div>}>
           <Buscador searchParams={searchParams} />

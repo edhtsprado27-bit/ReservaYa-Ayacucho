@@ -91,21 +91,5 @@ export function validarLectura(x: unknown): LecturaIA | null {
   };
 }
 
-/** Texto de la IA -> objeto. Algunos modelos envuelven el JSON en ```json ... ``` */
-export function extraerJSON(texto: string): unknown {
-  const limpio = texto.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  try {
-    return JSON.parse(limpio);
-  } catch {
-    const i = limpio.indexOf("{");
-    const j = limpio.lastIndexOf("}");
-    if (i >= 0 && j > i) {
-      try {
-        return JSON.parse(limpio.slice(i, j + 1));
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
-}
+/** Texto de la IA -> objeto (ahora en compartido: también lo usa el asistente) */
+export { extraerJSON } from "@/modules/compartido/dominio/ia";

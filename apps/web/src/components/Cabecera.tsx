@@ -1,4 +1,4 @@
-// Barra superior: marca y, a la derecha, "Ingresar" o tu cuenta.
+// Barra superior: marca y, a la derecha, el asistente y "Ingresar" o tu cuenta.
 // La parte de la cuenta depende de la sesión: se carga aparte (Suspense)
 // para que el resto de la página salga al instante.
 
@@ -41,9 +41,14 @@ export default function Cabecera() {
         <Link href="/" className="marca">
           ReservaYa <small>AYACUCHO</small>
         </Link>
-        <Suspense fallback={<span className="cuenta-espera" aria-hidden="true" />}>
-          <Cuenta />
-        </Suspense>
+        <nav className="cabecera-nav" aria-label="Principal">
+          <Link href="/asistente" className="cabecera-enlace">
+            Asistente
+          </Link>
+          <Suspense fallback={<span className="cuenta-espera" aria-hidden="true" />}>
+            <Cuenta />
+          </Suspense>
+        </nav>
       </div>
     </header>
   );

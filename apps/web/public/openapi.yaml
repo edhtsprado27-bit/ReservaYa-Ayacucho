@@ -38,6 +38,8 @@ tags:
     description: Locales publicados, asignar el dueño real, suspender y reactivar (módulo locales, solo admin)
   - name: Usuarios
     description: Buscar cuentas, cambiar entre jugador y dueño, suspender y reactivar (módulo usuarios, solo admin)
+  - name: Asistente
+    description: Asistente de canchas (RF09). Las reglas o la IA (OpenRouter) interpretan el mensaje; las canchas y horas salen de la base de datos
   - name: Ayuda por WhatsApp
     description: Número de WhatsApp de ayuda de la plataforma (módulo soporte, RF15). Son enlaces wa.me, sin API de pago
 
@@ -352,6 +354,62 @@ paths:
                       whatsappSoporte: { type: string, nullable: true, example: "+51966123456" }
         "400": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
+
+  /api/asistente:
+    post:
+      tags: [Asistente]
+      summary: Enviar un mensaje al asistente de canchas
+      description: |
+        Entiende búsquedas ("fútbol en Carmen Alto mañana a las 7") y dudas ("¿cómo pago el adelanto?").
+        - Lo simple lo entienden **reglas** (`modo: reglas`), al instante y sin gastar IA.
+        - Lo libre va a la **IA** de OpenRouter (`modo: ia`) solo con sesión y dentro del cupo diario
+          (`fn_cupo_asistente`: 10 por cuenta y 30 por día, configurable). Si no hay cupo o la IA falla, responden las reglas y `aviso` lo explica.
+        - Los locales, precios y horas libres salen SIEMPRE de la base de datos (catálogo publicado y grilla de cada local).
+        Para seguir la conversación ("¿y a las 8?"), envía los `filtros` de la respuesta anterior y el `historial`.
+        Máximo 20 mensajes por minuto por IP (`429 DEMASIADOS_MENSAJES`). No se guarda en caché.
+      operationId: consultarAsistente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mensaje]
+              properties:
+                mensaje: { type: string, minLength: 1, maxLength: 500, example: "fútbol en Carmen Alto mañana a las 7" }
+                filtros: { $ref: "#/components/schemas/FiltrosAsistente" }
+                historial:
+                  type: array
+                  maxItems: 6
+                  items:
+                    type: object
+                    properties:
+                      rol: { type: string, enum: [persona, asistente] }
+                      texto: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Respuesta del asistente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, example: true }
+                  respuesta:
+                    type: object
+                    properties:
+                      texto: { type: string, example: "Para mañana a las 19:00 encontré 1 local con canchas de fútbol en Carmen Alto y esa hora libre. Toca una hora para reservarla:" }
+                      modo: { type: string, enum: [reglas, ia] }
+                      aviso: { type: string, nullable: true }
+                      filtros: { $ref: "#/components/schemas/FiltrosAsistente" }
+                      entendido: { type: array, items: { type: string }, example: ["Fútbol", "Carmen Alto", "lun 23 nov", "19:00"] }
+                      recomendaciones:
+                        type: array
+                        maxItems: 3
+                        items: { $ref: "#/components/schemas/RecomendacionAsistente" }
+                      sugerencias: { type: array, items: { type: string } }
+        "400": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
 
   /api/disponibilidad:
     get:
@@ -1023,6 +1081,43 @@ components:
           type: array
           description: Servicios del local, en el orden de la lista
           items: { $ref: "#/components/schemas/CodigoServicio" }
+
+    FiltrosAsistente:
+      type: object
+      nullable: true
+      properties:
+        distrito: { type: string, nullable: true, example: "Carmen Alto" }
+        deporte: { type: string, nullable: true, enum: [Fútbol, Futsal, Vóley, null] }
+        fecha: { type: string, format: date, nullable: true }
+        hora: { type: string, nullable: true, example: "19:00" }
+        franja: { type: string, nullable: true, enum: [manana, tarde, noche, null] }
+        servicios: { type: array, items: { $ref: "#/components/schemas/CodigoServicio" } }
+        techada: { type: boolean, nullable: true }
+        precioMax: { type: number, nullable: true }
+        nombre: { type: string, nullable: true }
+
+    RecomendacionAsistente:
+      type: object
+      properties:
+        slug: { type: string }
+        nombre: { type: string }
+        distrito: { type: string }
+        precioDesde: { type: number, nullable: true }
+        servicios: { type: array, items: { $ref: "#/components/schemas/CodigoServicio" } }
+        deportes: { type: array, items: { type: string } }
+        enlace: { type: string, example: "/cancha/complejo-los-andes?fecha=2026-11-23" }
+        exacta: { type: boolean, description: "true si tiene libre justo la hora pedida" }
+        horas:
+          type: array
+          maxItems: 4
+          items:
+            type: object
+            properties:
+              hora: { type: string, example: "19:00" }
+              hasta: { type: string, example: "20:00" }
+              cancha: { type: string, example: "Cancha 1" }
+              precio: { type: number, nullable: true }
+              enlace: { type: string, description: "Abre la grilla con esa hora ya elegida" }
 
     CodigoServicio:
       type: string

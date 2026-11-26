@@ -15,6 +15,7 @@ import { verLocalesAdmin } from "@/modules/locales/aplicacion/locales.casos-de-u
 import type { LocalAdmin } from "@/modules/locales/dominio/configuracion";
 import { localesConSesion } from "@/modules/locales/infraestructura/composicion";
 import { ajustesPublicos } from "@/modules/soporte/infraestructura/composicion";
+import { leerUsoIAHoy } from "@/modules/asistente/infraestructura/supabase-control-ia";
 
 export const metadata: Metadata = { title: "Administrador · ReservaYa Ayacucho" };
 
@@ -24,13 +25,14 @@ async function Contenido() {
   if (perfil.rol !== "admin") redirect("/mi-cuenta");
 
   const db = await crearClienteServidor();
-  const [pendientes, resultado, ajustes] = await Promise.all([
+  const [pendientes, resultado, ajustes, usoIA] = await Promise.all([
     verPendientes(catalogoConSesion(db)).catch(() => []),
     verLocalesAdmin(localesConSesion(db)).then(
       (locales: LocalAdmin[]) => ({ locales, errorLocales: null }),
       (e: unknown) => ({ locales: [] as LocalAdmin[], errorLocales: aErrorAplicacion(e).message }),
     ),
     ajustesPublicos(),
+    leerUsoIAHoy(db).catch(() => null),
   ]);
   const { locales, errorLocales } = resultado;
   return (
@@ -58,6 +60,24 @@ async function Contenido() {
         <p className="meta">Sale en el botón “Ayuda” de todas las páginas para que jugadores y dueños te escriban.</p>
         <AjustesSoporte whatsappSoporte={ajustes.whatsappSoporte} />
       </section>
+      {usoIA && (
+        <section className="panel" aria-labelledby="t-ia">
+          <h2 id="t-ia">Uso de la IA hoy</h2>
+          <ul className="uso-ia">
+            <li>
+              <strong>{usoIA.asistente}</strong> de {usoIA.limiteAsistente} consultas del asistente
+              {usoIA.asistenteFallidos ? ` (${usoIA.asistenteFallidos} sin respuesta de la IA)` : ""}
+            </li>
+            <li>
+              <strong>{usoIA.comprobantes}</strong> {usoIA.comprobantes === 1 ? "comprobante leído" : "comprobantes leídos"}
+            </li>
+          </ul>
+          <p className="meta">
+            Los modelos gratis de OpenRouter permiten {usoIA.limiteOpenRouter} pedidos por día entre las dos funciones. El día se cuenta en
+            hora UTC: se reinicia a las 7:00 p. m. de Ayacucho.
+          </p>
+        </section>
+      )}
     </>
   );
 }
