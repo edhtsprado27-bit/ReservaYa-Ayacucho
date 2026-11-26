@@ -12,7 +12,7 @@
 | RF06 | El sistema debe leer el comprobante con IA y permitir que el dueño confirme o rechace el pago. |
 | RF07 | El sistema debe permitir consultar y cancelar las reservas realizadas y ver su estado. |
 | RF08 | El sistema debe permitir al administrador aprobar o rechazar canchas y gestionar usuarios. |
-| RF09 | El sistema debe ofrecer un asistente con IA para recomendaciones y soporte. |
+| RF09 | El sistema debe ofrecer un asistente con IA para recomendaciones y soporte: entiende lo que escribe el jugador (deporte, distrito, local, día, hora, servicios, precio), le muestra locales con horas libres reales y un enlace para reservarlas, y responde dudas sobre reservas y pagos. La IA (OpenRouter) solo interpreta el mensaje cuando las reglas no bastan, con un cupo diario; los locales y horarios salen siempre de la base (ADR-015). |
 | RF10 | El sistema debe notificar por correo la confirmación, el rechazo o la cancelación de una reserva, y enviar un recordatorio antes del partido. |
 | RF11 | El sistema debe mostrar los locales en un mapa y permitir buscar las canchas más cercanas a la ubicación del jugador. |
 | RF12 | El sistema debe permitir abrir la ruta hasta el local en Google Maps o Waze. |
@@ -33,7 +33,7 @@
 | HU05 Validar pagos | RF06, RF10, RF15 |
 | HU06 Consultar y cancelar reservas | RF07, RF10, RF15 |
 | HU07 Aprobar canchas | RF08 |
-| HU08 Asistente inteligente | RF09 |
+| HU08 Asistente inteligente | RF09, RF01, RF02 |
 | HU09 Ver mapa y ruta | RF11, RF12 |
 | HU10 Confirmación y recordatorio | RF10 |
 | HU11 Escribir por WhatsApp | RF15 |

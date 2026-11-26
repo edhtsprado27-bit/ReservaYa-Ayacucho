@@ -2,7 +2,7 @@
 
 > **Proyecto:** ReservaYa Ayacucho · **Aplicación:** `apps/web` (Next.js 16 + TypeScript) · **Módulo de referencia:** Reservas  
 > **Enfoque arquitectónico:** Clean Architecture dentro de cada módulo del monolito modular  
-> **Nivel C4:** 4 – Código · **Versión:** 2.0 (Sprint 2: alineado con el código implementado)
+> **Nivel C4:** 4 – Código · **Versión:** 2.1 (22/11/2026: módulo Asistente)
 
 ---
 
@@ -24,7 +24,7 @@ apps/web/src/
 ├── components/               PRESENTACIÓN: componentes de React
 ├── proxy.ts                  Renueva la sesión y protege las páginas privadas
 └── modules/
-    ├── compartido/           Error de la aplicación, validaciones y clientes de Supabase
+    ├── compartido/           Error de la aplicación, validaciones, clientes de Supabase y OpenRouter
     ├── cuentas/              Roles y perfil de quien navega
     ├── catalogo/             Canchas publicadas, registro y aprobación
     ├── reservas/             Grilla de horarios, reservar y cancelar
@@ -32,7 +32,8 @@ apps/web/src/
     ├── agenda/               Agenda del dueño: reservas por teléfono, cobros, bloqueos
     ├── locales/              Configuración del local (reglas, servicios, canchas) y control del admin
     ├── usuarios/             Gestión de cuentas por el admin: rol, suspender, reactivar
-    └── soporte/              WhatsApp de ayuda de la plataforma (enlaces wa.me)
+    ├── soporte/              WhatsApp de ayuda de la plataforma (enlaces wa.me)
+    └── asistente/            Chat de canchas: reglas + IA, horas libres reales y dudas frecuentes
 ```
 
 Cada módulo tiene las mismas carpetas:
@@ -211,5 +212,8 @@ export async function POST(request: Request) {
 | Locales | `LocalesRepositorio` | `verMisLocales`, `verConfiguracion`, `guardarAjustesLocal`, `guardarServiciosLocal`, `guardarCanchaDelLocal`, `agregarCanchaAlLocal`, `quitarCanchaDelLocal`, `verLocalesAdmin`, `gestionarLocal` | `SupabaseLocalesRepositorio`, `LocalesConVistasFrescas` (Decorator: renueva la ficha y el mapa) |
 | Usuarios | `UsuariosRepositorio` | `verUsuarios`, `gestionarUsuario` | `SupabaseUsuariosRepositorio` |
 | Soporte | `AjustesRepositorio` | `verAjustesPublicos`, `guardarAjustesPlataforma` | `SupabaseAjustesRepositorio`, lectura con `"use cache"` y Decorator que renueva la caché al guardar |
+| Asistente | `FuenteCanchas`, `InterpreteIA`, `ControlIA` | `consultarAsistente` (reglas → IA si hace falta → búsqueda en datos reales) | `fuentePublica()` (catálogo en caché, ficha `"use cache"` y grilla), `OpenRouterInterprete` (Adapter), `SupabaseControlIA` (cupo, configuración y registro) |
 
-Los enlaces de WhatsApp (`enlaceWhatsApp()` y los mensajes ya escritos) son funciones puras del dominio de `compartido`, porque los usan varios módulos (reservas, pagos, locales, usuarios, soporte).
+Los enlaces de WhatsApp (`enlaceWhatsApp()` y los mensajes ya escritos) son funciones puras del dominio de `compartido`, porque los usan varios módulos (reservas, pagos, locales, usuarios, soporte). Por la misma razón, el cliente de OpenRouter (`pedirJSON`: modelos de respaldo, JSON con esquema, registro de cada llamada) está en `compartido/infraestructura/openrouter.ts` y lo usan los adaptadores de pagos y del asistente.
+
+En el asistente, el dominio hace casi todo el trabajo con funciones puras que se prueban sin red: `interpretarConReglas()` entiende el mensaje, `evaluarLocal()` elige las horas libres de la grilla y `redactarBusqueda()` arma el texto. La IA solo reemplaza al intérprete cuando las reglas no están seguras, y su respuesta pasa por `validarInterpretacionIA()` antes de usarse (ADR-015).

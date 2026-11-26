@@ -1,7 +1,7 @@
 # Pruebas automatizadas
 
-> **Proyecto:** ReservaYa Ayacucho · **Herramientas:** Jest 29 (con `next/jest`), Playwright, GitHub Actions · **Versión:** 1.2 (21/11/2026)  
-> **Specs:** `specs/007-api-documentada-y-pruebas/spec.md`, `specs/011-pruebas-e2e/spec.md`, `specs/012-servicios-usuarios-whatsapp/spec.md`
+> **Proyecto:** ReservaYa Ayacucho · **Herramientas:** Jest 29 (con `next/jest`), Playwright, GitHub Actions · **Versión:** 1.3 (22/11/2026)  
+> **Specs:** `specs/007-api-documentada-y-pruebas/spec.md`, `specs/011-pruebas-e2e/spec.md`, `specs/012-servicios-usuarios-whatsapp/spec.md`, `specs/013-asistente-ia/spec.md`
 
 ---
 
@@ -40,33 +40,37 @@ Las pruebas siguen las capas de Clean Architecture. Como los casos de uso recibe
 | Unitaria · dominio + aplicación | `unitarias/locales/locales.test.ts` | Configuración del local: horas de 30 min, día válido, resumen del horario, servicios, validaciones y casos de uso del dueño y del admin | 24 |
 | Unitaria · dominio + aplicación + infraestructura | `unitarias/usuarios/usuarios.test.ts` | Gestión de usuarios (RF08): búsqueda, validación de pedidos, fechas, casos de uso, repositorio y traducción de errores | 18 |
 | Unitaria · dominio + aplicación + infraestructura | `unitarias/soporte/soporte.test.ts` | WhatsApp de ayuda (RF15): validación del celular, guardado con renovación de caché y lectura `"use cache"` | 6 |
+| Unitaria · dominio | `unitarias/asistente/reglas.test.ts` | Intérprete por reglas del asistente (RF09): distritos y apodos, deportes, servicios, días, horas («a las 7» = 19:00), franjas, fechas fuera de rango, seguimiento de la conversación, saludos y dudas | 21 |
+| Unitaria · dominio | `unitarias/asistente/dominio.test.ts` | Validación del pedido y de la respuesta de la IA, textos, búsqueda en el catálogo, horas libres cercanas de la grilla con su enlace, preguntas frecuentes e instrucciones para la IA | 21 |
+| Unitaria · aplicación | `unitarias/asistente/casos-de-uso.test.ts` | `consultarAsistente` con datos e IA falsos: reglas sin gastar IA, IA con registro, sin cupo (sin sesión, por cuenta, por día), IA caída o sin configuración, fallas de la base | 14 |
 | Unitaria · aplicación | `unitarias/pagos/enviar-comprobante.test.ts` | Caso de uso principal de pagos con puertos falsos: cada error y el camino feliz | 7 |
 | Unitaria · aplicación | `unitarias/pagos/pagos-casos-de-uso.test.ts` | Revisión del dueño, enlaces firmados, datos de Yape/Plin | 6 |
 | Unitaria · compartido | `unitarias/compartido/errores.test.ts` | Códigos de error y traducción de errores de Supabase | 14 |
 | Unitaria · compartido | `unitarias/compartido/whatsapp.test.ts` | Enlaces `wa.me` con el mensaje ya escrito (RF15) | 4 |
 | Unitaria · infraestructura | `unitarias/infraestructura/repositorios.test.ts` | Qué función de PostgreSQL llama cada repositorio, con qué parámetros y cómo convierte filas y errores | 19 |
 | Unitaria · infraestructura | `unitarias/infraestructura/openrouter-lector.test.ts` | Adaptador de IA: modelo de respaldo, demora, modelos gratis y de pago | 6 |
+| Unitaria · infraestructura | `unitarias/infraestructura/asistente-infra.test.ts` | Intérprete de OpenRouter (instrucciones, historial, máximo 2 modelos, respaldo), cliente `pedirJSON`, cupo y registro en Supabase, uso del día y límite de mensajes por IP | 15 |
 | Unitaria · infraestructura | `unitarias/infraestructura/local-publico.test.ts` | Ficha del local con la caché de Next.js | 2 |
 | Unitaria · infraestructura | `unitarias/infraestructura/agenda-repositorio.test.ts` | Repositorio de la agenda, mapeo y errores; motivo de cancelación del local | 15 |
 | Unitaria · infraestructura | `unitarias/infraestructura/locales-repositorio.test.ts` | Repositorio de locales (incluye servicios), renovación de cachés (Decorator) y llamadas a la API desde el navegador | 24 |
-| Integración · API | `integracion/api.test.ts` | Las 23 rutas `/api` reales (presentación → caso de uso → repositorio) con Supabase falso: códigos HTTP, cabeceras de caché, errores | 61 |
+| Integración · API | `integracion/api.test.ts` | Las 24 rutas `/api` reales (presentación → caso de uso → repositorio) con Supabase falso: códigos HTTP, cabeceras de caché, errores; el asistente con y sin IA (fetch simulado) y el límite de 20 mensajes por minuto | 66 |
 | Integración · contrato | `integracion/openapi.test.ts` | `openapi.yaml` describe exactamente las rutas del código | 3 |
-| **Total** | **20 archivos** | | **303** |
+| **Total** | **24 archivos** | | **379** |
 
 ---
 
 ## 4. Resultados
 
-Ejecución del 21/11/2026: **303 de 303 pruebas pasan** en aproximadamente 3 segundos.
+Ejecución del 22/11/2026: **379 de 379 pruebas pasan** en aproximadamente 4 segundos.
 
 ### Cobertura
 
 | Métrica | % | Cubiertas |
 |---|---|---|
-| Líneas | **99,16 %** | 1309 / 1320 |
-| Sentencias | 96,61 % | 1626 / 1683 |
-| Funciones | 96,27 % | 388 / 403 |
-| Ramas | 92,39 % | 777 / 841 |
+| Líneas | **99,33 %** | 1789 / 1801 |
+| Sentencias | 97,08 % | 2267 / 2335 |
+| Funciones | 96,98 % | 515 / 531 |
+| Ramas | 93,27 % | 1165 / 1249 |
 
 Mínimo exigido en `jest.config.mjs`: 80 % de líneas, sentencias y funciones y 70 % de ramas. Si la cobertura baja de eso, la prueba falla.
 

@@ -1,7 +1,7 @@
 # Modelo de datos
 
 > **Proyecto:** ReservaYa Ayacucho · **Base de datos:** PostgreSQL en Supabase · **Versión:** 2.1 (21/11/2026: servicios, gestión de usuarios y ajustes de la plataforma)  
-> **Archivos:** `database/supabase_inicial.sql` (tablas, restricciones y datos base) y `database/migrations/004` a `012` (funciones, RLS y cambios)
+> **Archivos:** `database/supabase_inicial.sql` (tablas, restricciones y datos base) y `database/migrations/004` a `013` (funciones, RLS y cambios)
 
 ---
 
@@ -20,9 +20,9 @@ Describir las tablas que usa el sistema, qué módulo es dueño de cada una y la
 | Servicios del local | `amenities`, `venue_amenities` | Lista fija de 8 servicios (vestuarios, duchas, baños, estacionamiento, cafetería, tribuna, iluminación, balón incluido) y cuáles ofrece cada local (012) |
 | Reservas | `bookings`, `booking_status_history` | Reservas con su rango de tiempo (`period`), estado, montos, apartado y clave de idempotencia; historial de cambios de estado |
 | Pagos | `payments`, `receipt_extractions` | Comprobantes (ruta en Storage, huella SHA-256, método, estado) y lo que leyó la IA |
-| IA | `ai_model_configs`, `ai_requests` | Modelo, respaldos, temperatura y prompt por función; registro de cada llamada (tokens, costo, latencia, estado) |
+| IA | `ai_model_configs`, `ai_requests` | Modelo, respaldos, temperatura y prompt por función (`receipt_ocr` para los comprobantes y `chat_assistant` para el asistente, 013); registro de cada llamada (tokens, costo, latencia, estado), que también sirve para contar el cupo diario del asistente |
 | Archivos | `storage.objects` (bucket `comprobantes`) | Capturas de Yape/Plin, privadas |
-| Plataforma | `app_settings` | Ajustes generales; por ahora el WhatsApp de ayuda (`whatsapp_soporte`). Sin acceso directo desde la API: solo por funciones (012) |
+| Plataforma | `app_settings` | Ajustes generales: el WhatsApp de ayuda (`whatsapp_soporte`, 012) y los límites del asistente (`ia_asistente_por_dia` = 30 e `ia_asistente_por_cuenta` = 10, 013). Sin acceso directo desde la API: solo por funciones |
 | Auditoría | `audit_logs` | Quién hizo cada cambio de administración (locales, canchas, servicios, roles, suspensiones, ajustes) |
 
 ---
@@ -56,6 +56,7 @@ Describir las tablas que usa el sistema, qué módulo es dueño de cada una y la
 | Locales (011, 012) | `fn_config_local`, `fn_guardar_local`, `fn_guardar_servicios`, `fn_guardar_cancha`, `fn_agregar_cancha`, `fn_quitar_cancha`, `fn_locales_admin`, `fn_asignar_dueno`, `fn_cambiar_estado_local` |
 | Usuarios (012) | `fn_usuarios_admin`, `fn_cambiar_rol`, `fn_cambiar_estado_usuario` |
 | Ayuda por WhatsApp (012) | `fn_ajustes_publicos` (cualquiera), `fn_guardar_ajustes` (admin) |
+| Asistente (013) | `fn_cupo_asistente` (¿puede usar la IA? sin sesión, cupo de la cuenta o del día), `fn_config_ia` (`chat_assistant`), `fn_registrar_ia_asistente` (solo con sesión), `fn_uso_ia_hoy` (admin: uso del día UTC, como cuenta OpenRouter) |
 
 Cada función corresponde a un método de un repositorio en `apps/web/src/modules/*/infraestructura/` (patrón Repository).
 
@@ -69,5 +70,6 @@ Cada función corresponde a un método de un repositorio en `apps/web/src/module
 | `ix_bookings_jugador_estado` | «Mis reservas» y el límite de reservas por pagar |
 | `ix_payments_reserva_estado` | Estado del pago de una reserva |
 | `ix_receipt_extractions_pago` | Lectura de la IA de cada pago |
+| `ix_ai_requests_funcion_fecha` | Contar el uso de la IA del día por función (cupo del asistente y panel del admin) |
 
 > El análisis del comportamiento de la base (planes de ejecución con `EXPLAIN ANALYZE` y resultados de las pruebas de carga) se documenta en el Sprint 2.

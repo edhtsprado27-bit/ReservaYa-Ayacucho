@@ -1,7 +1,7 @@
 # Nivel 1 · Diagrama de contexto del sistema
 
 > **Proyecto:** ReservaYa Ayacucho  
-> **Modelo:** C4 · Nivel 1 de 4 · **Versión:** 2.1 (21/11/2026: WhatsApp por enlaces)
+> **Modelo:** C4 · Nivel 1 de 4 · **Versión:** 2.2 (22/11/2026: OpenRouter también para el asistente; antes, 21/11/2026: WhatsApp por enlaces)
 
 ---
 
@@ -42,7 +42,7 @@ Mostrar **ReservaYa Ayacucho como una sola caja**: quiénes lo usan y con qué s
 |------------------------|--------------------|----------------------------------------------------------------------------------------------------------|-------------------------------------|
 | **ReservaYa Ayacucho** | Sistema en alcance | Permite a los dueños publicar sus canchas y a los jugadores reservarlas y pagarlas sin cruces de horario | El equipo del proyecto              |
 | **Yape / Plin**        | Sistema externo    | Billeteras digitales donde el jugador paga el adelanto al dueño                                          | Bancos (BCP, Interbank y asociados) |
-| **OpenRouter**         | Sistema externo    | Da acceso a modelos de IA (gratuitos) para leer los comprobantes de pago                                 | Proveedor OpenRouter                |
+| **OpenRouter**         | Sistema externo    | Da acceso a modelos de IA (gratuitos) para leer los comprobantes de pago y entender los mensajes del asistente cuando sus reglas no bastan | Proveedor OpenRouter                |
 | **OpenStreetMap**      | Sistema externo    | Provee las teselas del mapa donde se ubican los locales                                                  | Comunidad OpenStreetMap             |
 | **Google Maps / Waze** | Sistema externo    | Trazan la ruta hasta el local en el celular del jugador (solo con un enlace)                             | Google                              |
 | **WhatsApp**           | Sistema externo    | Abre el chat con el mensaje ya escrito (solo con un enlace `wa.me`, sin API)                             | Meta                                |
@@ -58,6 +58,7 @@ Mostrar **ReservaYa Ayacucho como una sola caja**: quiénes lo usan y con qué s
 | Administrador      | ReservaYa Ayacucho | Aprueba canchas, gestiona locales y usuarios y configura el WhatsApp de ayuda | —          |
 | Jugador            | Yape / Plin        | Paga el adelanto desde su aplicación                                   | —          |
 | ReservaYa Ayacucho | OpenRouter         | Envía la captura para leer monto, n.º de operación, fecha y destinatario | HTTPS/REST |
+| ReservaYa Ayacucho | OpenRouter         | Envía el mensaje del jugador para obtener su intención y filtros (deporte, distrito, día, hora…); los locales y horarios los pone ReservaYa | HTTPS/REST |
 | ReservaYa Ayacucho | OpenStreetMap      | Descarga las teselas del mapa                                          | HTTPS      |
 | Jugador            | Google Maps / Waze | Abre la ruta hasta el local desde el enlace «Cómo llegar»              | —          |
 | Jugador, dueño y admin | WhatsApp       | Abren un chat con el mensaje ya escrito desde los enlaces `wa.me` (local, reserva, «Ayuda») | —          |

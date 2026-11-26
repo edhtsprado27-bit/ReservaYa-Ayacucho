@@ -13,13 +13,14 @@ flowchart LR
         uc4["Agenda<br/>anotarReserva · bloquearHorario"]
         uc5["Locales<br/>guardarServiciosLocal · gestionarLocal"]
         uc6["Usuarios y soporte<br/>gestionarUsuario · guardarAjustesPlataforma"]
-        uc1 ~~~ uc2 ~~~ uc3
-        uc4 ~~~ uc5 ~~~ uc6
+        uc7["Asistente<br/>consultarAsistente"]
+        uc1 ~~~ uc2 ~~~ uc3 ~~~ uc4
+        uc5 ~~~ uc6 ~~~ uc7
     end
     subgraph dom["Dominio"]
         direction TB
-        ent["Entidades y reglas<br/>Reserva · Cancha · Pago · verificar<br/>Servicios · UsuarioAdmin · enlaceWhatsApp"]
-        ports["Puertos<br/>ReservasRepositorio · CatalogoRepositorio<br/>PagosRepositorio · AlmacenComprobantes<br/>LectorComprobantes · AgendaRepositorio<br/>LocalesRepositorio · UsuariosRepositorio<br/>AjustesRepositorio"]
+        ent["Entidades y reglas<br/>Reserva · Cancha · Pago · verificar<br/>Servicios · UsuarioAdmin · enlaceWhatsApp<br/>Filtros · interpretarConReglas · evaluarLocal"]
+        ports["Puertos<br/>ReservasRepositorio · CatalogoRepositorio<br/>PagosRepositorio · AlmacenComprobantes<br/>LectorComprobantes · AgendaRepositorio<br/>LocalesRepositorio · UsuariosRepositorio<br/>AjustesRepositorio · FuenteCanchas<br/>InterpreteIA · ControlIA"]
         ent ~~~ ports
     end
     subgraph infra["Infraestructura"]
@@ -27,7 +28,7 @@ flowchart LR
         pg["Repositorios<br/>Supabase (funciones fn_*)"]
         ca["Decorators de caché<br/>CatalogoEnCache · LocalesConVistasFrescas"]
         st["Almacén<br/>Supabase Storage"]
-        or["Lector IA<br/>OpenRouter"]
+        or["Adaptadores de IA<br/>OpenRouter (comprobantes<br/>y asistente)"]
         pg ~~~ ca
         st ~~~ or
     end

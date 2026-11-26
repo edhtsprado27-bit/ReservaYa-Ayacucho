@@ -37,7 +37,7 @@
 
 | Paso | Acción |
 |---|---|
-| 1 | Crear el proyecto en Supabase y ejecutar en el SQL Editor el esquema inicial y las migraciones de `database/migrations/` en orden (004 → 009) |
+| 1 | Crear el proyecto en Supabase y ejecutar en el SQL Editor el esquema inicial y las migraciones de `database/migrations/` en orden (004 → 013) |
 | 2 | En Supabase Auth: Site URL `https://reservaya-ayacucho.vercel.app` y Redirect URLs `http://localhost:3000/**` y `https://reservaya-ayacucho.vercel.app/**` |
 | 3 | Crear el proyecto en Vercel con **Root Directory** `apps/web` y cargar las variables de entorno |
 | 4 | Hacer push a `main`: Vercel compila (`next build`) y publica |

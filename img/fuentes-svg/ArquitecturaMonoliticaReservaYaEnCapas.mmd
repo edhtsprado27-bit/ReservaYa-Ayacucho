@@ -14,10 +14,10 @@ flowchart TB
             m6["Locales"]
             m7["Usuarios"]
             m8["Soporte (WhatsApp)"]
-            m9["Compartido"]
-            m1 ~~~ m2 ~~~ m3
-            m4 ~~~ m5 ~~~ m6
-            m7 ~~~ m8 ~~~ m9
+            m9["Asistente"]
+            m10["Compartido"]
+            m1 ~~~ m2 ~~~ m3 ~~~ m4 ~~~ m5
+            m6 ~~~ m7 ~~~ m8 ~~~ m9 ~~~ m10
         end
         subgraph c3["Capa de datos"]
             r["Repositorios y adaptadores"]

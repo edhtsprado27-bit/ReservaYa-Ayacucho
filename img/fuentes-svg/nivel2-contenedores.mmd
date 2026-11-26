@@ -2,8 +2,8 @@ flowchart TB
     usuarios["<b>Jugador · Dueño de cancha · Administrador</b><br/>[Personas]"]
 
     subgraph limite["ReservaYa Ayacucho [Sistema]"]
-        web["<b>Aplicación web</b><br/>[Next.js 16 · navegador]<br/>Mapa, grilla de horarios,<br/>paneles del dueño y admin,<br/>enlaces de WhatsApp"]
-        srv["<b>Servidor de la aplicación</b><br/>[Next.js 16 en Vercel]<br/>Páginas + API REST /api<br/>Monolito modular (8 módulos)"]
+        web["<b>Aplicación web</b><br/>[Next.js 16 · navegador]<br/>Mapa, grilla de horarios,<br/>paneles del dueño y admin,<br/>chat del asistente,<br/>enlaces de WhatsApp"]
+        srv["<b>Servidor de la aplicación</b><br/>[Next.js 16 en Vercel]<br/>Páginas + API REST /api<br/>Monolito modular (9 módulos)"]
         cdn["<b>CDN</b><br/>[Vercel]<br/>Catálogo 60 s · grilla 5 s"]
         bd[("<b>Base de datos</b><br/>[PostgreSQL · Supabase]<br/>Funciones fn_*, RLS,<br/>EXCLUDE anti doble reserva")]
         auth[("<b>Autenticación</b><br/>[Supabase Auth]<br/>Cuentas y sesiones")]
@@ -22,7 +22,7 @@ flowchart TB
     srv -- "Funciones fn_*<br/>[HTTPS · PostgREST]" --> bd
     srv -- "Sesión" --> auth
     srv -- "Sube capturas<br/>[HTTPS]" --> storage
-    srv -- "Lee comprobantes<br/>[HTTPS/REST]" --> openrouter
+    srv -- "Lee comprobantes y<br/>entiende mensajes del asistente<br/>[HTTPS/REST]" --> openrouter
     usuarios -. "Abren el chat<br/>(enlace)" .-> whatsapp
 
     classDef persona fill:#08427b,stroke:#052e56,color:#fff

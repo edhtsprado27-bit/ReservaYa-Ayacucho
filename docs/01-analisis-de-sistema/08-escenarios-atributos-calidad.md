@@ -32,12 +32,12 @@
 |---|---|
 | **Atributo de calidad** | Disponibilidad |
 | **Fuente** | Jugador |
-| **Estímulo** | El jugador intenta reservar o pagar cuando falla un servicio externo (por ejemplo, OpenRouter). |
+| **Estímulo** | El jugador intenta reservar, pagar o consultar al asistente cuando falla un servicio externo (por ejemplo, OpenRouter) o se acabó su cupo gratis. |
 | **Condición** | El sistema está publicado y cuenta con monitoreo. |
-| **Respuesta esperada** | El sistema permite seguir reservando; si la IA no responde, el comprobante queda pendiente de revisión manual por el dueño. |
+| **Respuesta esperada** | El sistema permite seguir reservando; si la IA no responde, el comprobante queda pendiente de revisión manual por el dueño y el asistente responde con sus reglas, usando los datos de la base, y avisa que la IA no respondió. |
 | **Medida** | **Propuesta por validar:** disponibilidad mensual de 99 % para la búsqueda y la reserva. |
 | **Verificación** | Revisar los registros de monitoreo y calcular los periodos de disponibilidad e interrupción. |
-| **Estado** | Pendiente de aprobar la meta y definir la herramienta de monitoreo. |
+| **Estado** | Meta mensual pendiente de aprobar y de definir la herramienta de monitoreo. **La respuesta ante la falla de la IA está probada (22/11/2026):** las pruebas del asistente simulan la IA caída, lenta, sin formato, sin clave y sin cupo, y en todos los casos responde con las reglas; las pruebas E2E corren sin clave de OpenRouter y el asistente funciona. |
 
 ## EQ-04. Seguridad: acceso a operaciones protegidas
 
@@ -58,12 +58,12 @@
 |---|---|
 | **Atributo de calidad** | Mantenibilidad |
 | **Fuente** | Equipo de desarrollo |
-| **Estímulo** | Se necesita cambiar el modelo de IA (por ejemplo, de Llama 3 a Gemini) o una regla de tarifas. |
+| **Estímulo** | Se necesita cambiar el modelo de IA (por ejemplo, porque un modelo gratis deja de existir) o una regla de tarifas. |
 | **Condición** | El sistema está organizado en módulos y dispone de pruebas para las funciones afectadas. |
-| **Respuesta esperada** | El cambio se concentra en el módulo responsable (Asistente IA u Horarios) sin afectar funciones no relacionadas. |
+| **Respuesta esperada** | El cambio se concentra en el módulo responsable (Asistente, Pagos o Locales) sin afectar funciones no relacionadas. |
 | **Medida** | Las pruebas del módulo modificado y las pruebas de regresión acordadas deben aprobarse. El cambio de modelo se realiza modificando solo la configuración o el adaptador. |
 | **Verificación** | Revisar los cambios de código, ejecutar las pruebas e inspeccionar las dependencias entre módulos. |
-| **Estado** | Pendiente de definir las pruebas obligatorias para los cambios. |
+| **Estado** | **Cumple para la IA (22/11/2026):** el modelo, los de respaldo, la temperatura y las instrucciones de cada función (`receipt_ocr` y `chat_assistant`) se cambian con un `UPDATE` en `ai_model_configs`, sin tocar código ni volver a publicar. Los dos adaptadores comparten el cliente de OpenRouter (`pedirJSON`), y cada caso de uso depende solo de su puerto (`LectorComprobantes`, `InterpreteIA`). Pruebas obligatorias: las de Jest de los módulos `pagos` y `asistente` (en el CI). |
 
 ## Resumen de escenarios
 

@@ -34,6 +34,7 @@ subgraph NEGOCIO["LÓGICA DE NEGOCIO · módulos"]
     Locales["Locales"]
     Usuarios["Usuarios"]
     Soporte["Ayuda (WhatsApp)"]
+    Asistente["Asistente de canchas"]
 end
 
 %% =========================
@@ -67,6 +68,7 @@ NEGOCIO --> DATOS
 %% INTEGRACIONES EXTERNAS
 %% =========================
 Pagos --> OpenRouter
+Asistente -- "solo si las reglas no bastan" --> OpenRouter
 Web --> OSM
 Web -. "enlace" .-> WhatsApp
 
@@ -83,6 +85,7 @@ Pagos ~~~ Agenda
 Agenda ~~~ Locales
 Locales ~~~ Usuarios
 Usuarios ~~~ Soporte
+Soporte ~~~ Asistente
 
 BD ~~~ Auth
 Auth ~~~ Archivos
@@ -115,6 +118,7 @@ style Agenda fill:#222,stroke:#fff,color:#fff
 style Locales fill:#222,stroke:#fff,color:#fff
 style Usuarios fill:#222,stroke:#fff,color:#fff
 style Soporte fill:#222,stroke:#fff,color:#fff
+style Asistente fill:#222,stroke:#fff,color:#fff
 
 style BD fill:#222,stroke:#fff,color:#fff
 style Auth fill:#222,stroke:#fff,color:#fff
@@ -130,7 +134,7 @@ style WhatsApp fill:#222,stroke:#fff,color:#fff
 La arquitectura se organiza en tres capas principales:
 
 - **Presentación:** las páginas web y la API REST, ambas en una sola aplicación Next.js desplegada en Vercel (ADR-009).
-- **Lógica de negocio:** los módulos del monolito (`apps/web/src/modules/`): cuentas, catálogo, reservas, pagos, agenda del dueño, locales (configuración y control del admin), usuarios (gestión de cuentas) y soporte (WhatsApp de ayuda), más un módulo compartido. Cada uno se organiza por dentro con Clean Architecture (ADR-002).
+- **Lógica de negocio:** los módulos del monolito (`apps/web/src/modules/`): cuentas, catálogo, reservas, pagos, agenda del dueño, locales (configuración y control del admin), usuarios (gestión de cuentas), soporte (WhatsApp de ayuda) y asistente (chat que recomienda canchas libres y responde dudas), más un módulo compartido. Cada uno se organiza por dentro con Clean Architecture (ADR-002).
 - **Datos:** Supabase aporta PostgreSQL (con las reglas críticas en funciones `SECURITY DEFINER` y RLS), la autenticación y el almacenamiento privado de los comprobantes (ADR-010). La caché trabaja en memoria, en el CDN de Vercel y con la caché de Next.js (`"use cache"`); Redis quedó pospuesto porque el CDN ya comparte la caché entre servidores (ADR-004, ADR-013).
 
-El módulo de **Pagos** usa **OpenRouter** para leer los comprobantes con IA. El mapa se dibuja con **OpenStreetMap**, y «Cómo llegar» abre Google Maps o Waze con un enlace (ADR-012). Los pagos por **Yape/Plin** se hacen fuera del sistema: el jugador solo sube la captura del comprobante. El contacto por **WhatsApp** (al local, a la ayuda, al jugador o al dueño) también es un enlace `wa.me` que abre el chat con el mensaje ya escrito, sin API ni costo (ADR-014).
+El módulo de **Pagos** usa **OpenRouter** para leer los comprobantes con IA, y el **Asistente** lo usa para entender los mensajes que sus reglas no entienden, con un cupo diario; los locales y horarios que recomienda salen siempre de la base de datos (ADR-015). El mapa se dibuja con **OpenStreetMap**, y «Cómo llegar» abre Google Maps o Waze con un enlace (ADR-012). Los pagos por **Yape/Plin** se hacen fuera del sistema: el jugador solo sube la captura del comprobante. El contacto por **WhatsApp** (al local, a la ayuda, al jugador o al dueño) también es un enlace `wa.me` que abre el chat con el mensaje ya escrito, sin API ni costo (ADR-014).

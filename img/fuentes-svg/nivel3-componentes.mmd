@@ -3,7 +3,7 @@ flowchart TB
 
     subgraph srv["Servidor de la aplicación [Contenedor · Next.js en Vercel]"]
         direction TB
-        rest["<b>API REST</b><br/>app/api/**/route.ts<br/>23 rutas · 29 operaciones"]
+        rest["<b>API REST</b><br/>app/api/**/route.ts<br/>24 rutas · 30 operaciones"]
         proxy["<b>Proxy de sesión</b><br/>src/proxy.ts"]
         subgraph mods["Módulos (src/modules) · cada uno con Clean Architecture"]
             direction TB
@@ -22,11 +22,12 @@ flowchart TB
                 pagos["<b>Pagos</b><br/>Comprobante, IA,<br/>revisión del dueño"]
                 usuarios["<b>Usuarios</b><br/>Rol, suspender<br/>y reactivar"]
                 soporte["<b>Soporte</b><br/>WhatsApp de ayuda<br/>(use cache)"]
-                cuentas ~~~ pagos ~~~ usuarios ~~~ soporte
+                asistente["<b>Asistente</b><br/>Reglas + IA; horas libres<br/>reales del catálogo y la grilla"]
+                cuentas ~~~ pagos ~~~ usuarios ~~~ soporte ~~~ asistente
             end
             fila1 ~~~ fila2
         end
-        comp["<b>Compartido</b><br/>Errores, validaciones, clientes de Supabase,<br/>enlaces de WhatsApp (wa.me)"]
+        comp["<b>Compartido</b><br/>Errores, validaciones, clientes de Supabase,<br/>enlaces de WhatsApp (wa.me), cliente de OpenRouter"]
     end
 
     bd[("<b>Base de datos</b><br/>[PostgreSQL · Supabase]<br/>funciones fn_*")]
@@ -40,7 +41,7 @@ flowchart TB
     mods -. "importan" .-> comp
     mods -- "Repository (todos)<br/>+ Decorator (Catálogo, Locales)" --> bd
     mods -- "Pagos · Adapter" --> storage
-    mods -- "Pagos · Adapter · HTTPS" --> openrouter
+    mods -- "Pagos y Asistente · Adapter · HTTPS" --> openrouter
     mods -- "Cuentas" --> auth
     proxy --> auth
 
@@ -48,7 +49,7 @@ flowchart TB
     classDef componente fill:#85bbf0,stroke:#5d82a8,color:#000
     classDef externo fill:#999999,stroke:#6b6b6b,color:#fff
     class web,bd,auth,storage contenedor
-    class rest,proxy,cuentas,catalogo,reservas,pagos,agenda,locales,usuarios,soporte,comp componente
+    class rest,proxy,cuentas,catalogo,reservas,pagos,agenda,locales,usuarios,soporte,asistente,comp componente
     class openrouter externo
     style srv fill:none,stroke:#444,stroke-dasharray:6 4
     style mods fill:#f4f8fc,stroke:#5d82a8

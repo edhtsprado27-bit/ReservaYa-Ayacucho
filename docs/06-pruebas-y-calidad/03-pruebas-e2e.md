@@ -1,7 +1,7 @@
 # Pruebas E2E (de punta a punta) con Playwright
 
-> **Proyecto:** ReservaYa Ayacucho · **Herramientas:** Playwright 1.63 (Chromium), PostgreSQL 16, GitHub Actions · **Versión:** 1.1 (21/11/2026)  
-> **Specs:** `specs/011-pruebas-e2e/spec.md`, `specs/012-servicios-usuarios-whatsapp/spec.md` · **Código:** `apps/web/pruebas-e2e/` y `apps/web/playwright.config.ts`
+> **Proyecto:** ReservaYa Ayacucho · **Herramientas:** Playwright 1.63 (Chromium), PostgreSQL 16, GitHub Actions · **Versión:** 1.2 (22/11/2026)  
+> **Specs:** `specs/011-pruebas-e2e/spec.md`, `specs/012-servicios-usuarios-whatsapp/spec.md`, `specs/013-asistente-ia/spec.md` · **Código:** `apps/web/pruebas-e2e/` y `apps/web/playwright.config.ts`
 
 ---
 
@@ -23,7 +23,7 @@ Playwright (Chromium)  ──▶  Web de ReservaYa compilada (next build + next 
                              /storage/v1  subir la captura del pago y verla con enlace firmado
                                   │  cada pedido con el rol anon/authenticated y el usuario del JWT
                                   ▼
-                           PostgreSQL 16 con database/supabase_inicial.sql + migraciones 004 a 012
+                           PostgreSQL 16 con database/supabase_inicial.sql + migraciones 004 a 013
 ```
 
 | Pieza | ¿Real o de prueba? |
@@ -61,17 +61,19 @@ Las contraseñas solo existen en esa base de pruebas (se guardan cifradas con sc
 | 8 | `admin.spec.ts` | Asignar el dueño real por correo | Correo sin cuenta → mensaje claro; con cuenta → el nuevo dueño ve el local en su configuración |
 | 9 | `admin.spec.ts` | Suspender y reactivar | Sin motivo no deja; suspendido sale del mapa y su ficha no se encuentra; el dueño ve el motivo; al reactivar vuelve |
 | 10 | `admin.spec.ts` | Accesos | Un jugador no entra a `/admin` ni a `/dueno/agenda` (vuelve a Mi cuenta) y la API responde 403; un visitante va al login |
-| 11 | `doble-reserva.spec.ts` | **Dos jugadores reservan la misma hora a la vez** | Exactamente uno lo logra; el otro ve "Alguien acaba de reservar ese horario" y la hora ya marcada como ocupada (EQ-02 desde el navegador) |
-| 12 | `dueno.spec.ts` | Agenda: reserva por teléfono, cobro y cancelación | Anota con S/ 20 en efectivo → "Falta S/ 20"; un visitante ve la hora ocupada; cobra el saldo → "Pagado S/ 40"; cancelar sin motivo no deja; con "Lluvia" la hora queda libre |
-| 13 | `dueno.spec.ts` | Agenda: bloqueo por mantenimiento | El jugador ve 07:00 y 08:00 "Cerrada" y 09:00 libre; al abrir de nuevo, vuelve a estar libre |
-| 14 | `dueno.spec.ts` | Configuración de una cancha | Precio S/ 45 y horario 08:00–22:00: el jugador ve el precio nuevo, ya no ve las 06:00 ni las 22:00 |
-| 15 | `jugador.spec.ts` | **Recorrido completo del jugador** | Busca "andes" → ve horarios y precio de hora punta → sin sesión le pide ingresar → se registra → reserva las 19:00 → ve el Yape y el titular del local → sube la captura → "Pago en revisión" → el dueño ve la captura y confirma → en Mi cuenta aparece "Confirmada" |
-| 16 | `servicios.spec.ts` | **Servicios del local y WhatsApp del local** (RF01, RF03, RF15) | El dueño marca vestuarios, duchas e iluminación → la ficha los muestra en ese orden y tiene "Escribir por WhatsApp" (`wa.me/51966123456` con el mensaje ya escrito) → en el mapa, "Con: Duchas" deja solo Los Andes y "Duchas + Tribuna" no deja ninguno → al desmarcar uno, la ficha cambia al instante |
-| 17 | `usuarios.spec.ts` | **Gestión de usuarios: rol** (RF08) | Busca "pedro" → lo pasa a dueño y lo devuelve a jugador; una dueña con locales no tiene "Pasar a jugador"; la fila del propio admin no tiene botones |
-| 18 | `usuarios.spec.ts` | **Gestión de usuarios: suspender y reactivar** (RF08) | Sin motivo no deja; suspendida, su sesión abierta lleva a "Tu cuenta está suspendida" con el motivo, la API rechaza su reserva (`401`) y al ingresar con el formulario también llega al aviso; al reactivar, vuelve a Mi cuenta |
-| 19 | `usuarios.spec.ts` | Accesos de usuarios | Un dueño no entra a `/admin/usuarios` y la API responde `403` (también al cambiar el WhatsApp de ayuda) |
-| 20 | `whatsapp.spec.ts` | **WhatsApp de ayuda** (RF15) | Sin número no hay botón; "12345" → error; "966 111 222" → el botón "Ayuda" sale en el mapa, la ficha y el login con `https://wa.me/51966111222?text=…`; "WhatsApp al dueño" en `/admin`; vacío → el botón desaparece |
-| 21 | `celular.spec.ts` | En el celular (Pixel 7) | Buscar, abrir la cancha, elegir hora y ver el total, sin que la página se salga de la pantalla |
+| 11 | `asistente.spec.ts` | **Asistente de canchas** (RF09) | Desde la cabecera llega a `/asistente`; «fútbol en Los Andes pasado mañana a las 7» → «Entendí: Complejo Los Andes, Fútbol, 19:00» y la hora con S/ 80, sin IA; «¿y a las 8?» cambia solo la hora; tocar 20:00 abre la ficha con ese día, cancha y hora elegidos (Total S/ 80); al volver, la conversación sigue |
+| 12 | `asistente.spec.ts` | Dudas y sugerencias del asistente | «¿Cómo pago el adelanto?» → Yape o Plin; una sugerencia se envía con un toque; «cuéntame un chiste» → «No te entendí bien»; con sesión, el pie cambia; «Nueva conversación» empieza de cero |
+| 13 | `doble-reserva.spec.ts` | **Dos jugadores reservan la misma hora a la vez** | Exactamente uno lo logra; el otro ve "Alguien acaba de reservar ese horario" y la hora ya marcada como ocupada (EQ-02 desde el navegador) |
+| 14 | `dueno.spec.ts` | Agenda: reserva por teléfono, cobro y cancelación | Anota con S/ 20 en efectivo → "Falta S/ 20"; un visitante ve la hora ocupada; cobra el saldo → "Pagado S/ 40"; cancelar sin motivo no deja; con "Lluvia" la hora queda libre |
+| 15 | `dueno.spec.ts` | Agenda: bloqueo por mantenimiento | El jugador ve 07:00 y 08:00 "Cerrada" y 09:00 libre; al abrir de nuevo, vuelve a estar libre |
+| 16 | `dueno.spec.ts` | Configuración de una cancha | Precio S/ 45 y horario 08:00–22:00: el jugador ve el precio nuevo, ya no ve las 06:00 ni las 22:00 |
+| 17 | `jugador.spec.ts` | **Recorrido completo del jugador** | Busca "andes" → ve horarios y precio de hora punta → sin sesión le pide ingresar → se registra → reserva las 19:00 → ve el Yape y el titular del local → sube la captura → "Pago en revisión" → el dueño ve la captura y confirma → en Mi cuenta aparece "Confirmada" |
+| 18 | `servicios.spec.ts` | **Servicios del local y WhatsApp del local** (RF01, RF03, RF15) | El dueño marca vestuarios, duchas e iluminación → la ficha los muestra en ese orden y tiene "Escribir por WhatsApp" (`wa.me/51966123456` con el mensaje ya escrito) → en el mapa, "Con: Duchas" deja solo Los Andes y "Duchas + Tribuna" no deja ninguno → al desmarcar uno, la ficha cambia al instante |
+| 19 | `usuarios.spec.ts` | **Gestión de usuarios: rol** (RF08) | Busca "pedro" → lo pasa a dueño y lo devuelve a jugador; una dueña con locales no tiene "Pasar a jugador"; la fila del propio admin no tiene botones |
+| 20 | `usuarios.spec.ts` | **Gestión de usuarios: suspender y reactivar** (RF08) | Sin motivo no deja; suspendida, su sesión abierta lleva a "Tu cuenta está suspendida" con el motivo, la API rechaza su reserva (`401`) y al ingresar con el formulario también llega al aviso; al reactivar, vuelve a Mi cuenta |
+| 21 | `usuarios.spec.ts` | Accesos de usuarios | Un dueño no entra a `/admin/usuarios` y la API responde `403` (también al cambiar el WhatsApp de ayuda) |
+| 22 | `whatsapp.spec.ts` | **WhatsApp de ayuda** (RF15) | Sin número no hay botón; "12345" → error; "966 111 222" → el botón "Ayuda" sale en el mapa, la ficha y el login con `https://wa.me/51966111222?text=…`; "WhatsApp al dueño" en `/admin`; vacío → el botón desaparece |
+| 23 | `celular.spec.ts` | En el celular (Pixel 7) | Buscar, abrir la cancha, elegir hora y ver el total, sin que la página se salga de la pantalla |
 
 ---
 
@@ -80,6 +82,8 @@ Las contraseñas solo existen en esa base de pruebas (se guardan cifradas con sc
 Ejecución del 20/11/2026 (simulación completa del CI en una copia limpia del repositorio, y tres corridas seguidas desde una base nueva): **16 de 16 pruebas pasan, en unos 90 segundos, sin fallos al azar.**
 
 Ejecución del 21/11/2026, con servicios, gestión de usuarios y WhatsApp (paso 9): **21 de 21 pruebas pasan, en unos 2 minutos**, desde una base nueva con las migraciones 004 a 012.
+
+Ejecución del 22/11/2026, con el asistente de canchas (paso 10): **23 de 23 pruebas pasan, en unos 2 minutos**, desde una base nueva con las migraciones 004 a 013. Las pruebas corren sin clave de OpenRouter, así que el asistente responde con sus reglas: es el mismo modo que se usa en producción cuando la IA falla o se acaba el cupo (EQ-03).
 
 | Evidencia | |
 |---|---|
@@ -95,9 +99,15 @@ Ejecución del 21/11/2026, con servicios, gestión de usuarios y WhatsApp (paso 
 | ![Gestión de usuarios](../../img/evidencias/e2e-usuarios-admin.png) | **Usuarios (admin):** buscar, filtrar, pasar a dueño, suspender con motivo. Las cuentas de administrador no tienen botones. |
 | ![Cuenta suspendida](../../img/evidencias/e2e-cuenta-suspendida.png) | **Cuenta suspendida:** la persona ve el motivo y no puede reservar. |
 
+| Evidencia (paso 10) | |
+|---|---|
+| ![Asistente de canchas](../../img/evidencias/e2e-asistente.png) | **Asistente:** entendió local, deporte, día y hora sin IA; muestra las horas libres reales (la pedida, resaltada) y cada una abre la grilla con esa hora elegida. También responde dudas frecuentes. |
+| ![Uso de la IA hoy en el panel del admin](../../img/evidencias/e2e-uso-ia-admin.png) | **Uso de la IA hoy (admin):** consultas del asistente de su límite y comprobantes leídos, para cuidar los 50 pedidos diarios del plan gratis. |
+
 ### Lo que encontraron las pruebas
 
 - Al reabrir unas horas bloqueadas, **la misma pestaña** que ya tenía la grilla abierta podía seguir viendo "Cerrada" durante unos segundos al recargar. No es un error: la grilla se guarda en caché con `stale-while-revalidate` (5 s en el CDN y hasta 15 s de copia anterior) a propósito, para aguantar mucho tráfico (EQ-01, ADR-013). La reserva igual la decide la base de datos. La prueba quedó revisando como otro visitante, y el comportamiento quedó documentado aquí.
+- **Paso 10:** la prueba de usuarios a veces tocaba «Reactivar» en la lista anterior, antes de que llegara la lista filtrada por «Suspendidas». Al llegar, la pantalla se arma de nuevo y el aviso «puede volver a ingresar» se perdía. No era un error de la web sino de la prueba: ahora espera a que el filtro «Suspendidas» quede marcado antes de seguir.
 
 ---
 
@@ -109,9 +119,9 @@ El trabajo **"Pruebas E2E (Playwright)"** de `.github/workflows/ci.yml` corre de
 |---|---|
 | Servicio `postgres:16` | PostgreSQL vacío solo para esta ejecución |
 | `npx playwright install --with-deps chromium` | Navegador |
-| `npm run e2e:base` | Crea la base: imitación de Supabase + esquema + migraciones 004 a 012 + datos |
+| `npm run e2e:base` | Crea la base: imitación de Supabase + esquema + migraciones 004 a 013 + datos |
 | `npm run build` | Compila la web apuntando al Supabase de pruebas |
-| `npm run e2e` | Levanta el Supabase de pruebas y la web, y ejecuta las 21 pruebas |
+| `npm run e2e` | Levanta el Supabase de pruebas y la web, y ejecuta las 23 pruebas |
 | Resumen | Tabla con cada prueba en la página de la ejecución |
 | Artefactos | `informe-e2e` (informe HTML de Playwright) y `evidencias-e2e` (capturas y un video por prueba), 30 días |
 

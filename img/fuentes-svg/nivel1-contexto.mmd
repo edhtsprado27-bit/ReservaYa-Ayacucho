@@ -15,7 +15,7 @@ flowchart TB
     dueno -- "Registra canchas<br/>y revisa pagos" --> sistema
     admin -- "Aprueba canchas y<br/>gestiona usuarios" --> sistema
     jugador -. "Paga el adelanto" .-> yape
-    sistema -- "Lectura del comprobante<br/>[HTTPS/REST]" --> openrouter
+    sistema -- "Lee comprobantes y entiende<br/>mensajes del asistente [HTTPS/REST]" --> openrouter
     sistema -- "Mapa<br/>[HTTPS]" --> osm
     jugador -. "Cómo llegar<br/>(enlace)" .-> rutas
     jugador -. "Escribe al local<br/>o a la ayuda (enlace wa.me)" .-> whatsapp

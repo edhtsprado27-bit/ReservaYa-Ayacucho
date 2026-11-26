@@ -9,7 +9,7 @@
 | HU05 | Como dueño de cancha, quiero validar los pagos de las reservas, para confirmar solo las reservas pagadas. |
 | HU06 | Como jugador, quiero consultar y cancelar mis reservas, para conocer su estado y liberar el horario si no puedo asistir. |
 | HU07 | Como administrador, quiero aprobar las canchas nuevas, para que solo se publiquen locales verificados. |
-| HU08 | Como jugador, quiero consultar a un asistente inteligente, para recibir recomendaciones de canchas y resolver mis dudas. |
+| HU08 | Como jugador, quiero consultar a un asistente inteligente escribiendo como hablo (por ejemplo «fútbol en Carmen Alto mañana a las 7 con duchas»), para recibir locales con esa hora libre y reservarla con un toque, y resolver mis dudas sobre reservas y pagos. |
 | HU09 | Como jugador, quiero ver las canchas en un mapa y abrir la ruta en Google Maps o Waze, para encontrar la más cercana y llegar sin perderme. |
 | HU10 | Como jugador, quiero recibir la confirmación y un recordatorio de mi reserva, para no olvidar mi partido. |
 | HU11 | Como jugador, quiero escribir por WhatsApp al local o a la ayuda de la plataforma con el mensaje ya escrito (con mi código de reserva cuando corresponde), para resolver mis dudas rápido sin buscar el número. |

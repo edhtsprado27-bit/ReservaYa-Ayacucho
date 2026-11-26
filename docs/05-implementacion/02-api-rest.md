@@ -1,7 +1,7 @@
 # API REST
 
 > **Proyecto:** ReservaYa Ayacucho · **Base:** `https://reservaya-ayacucho.vercel.app/api` · **Formato:** JSON  
-> **Implementación:** Route Handlers de Next.js (`apps/web/src/app/api/**/route.ts`) · **Versión:** 2.1 (21/11/2026: servicios, usuarios y WhatsApp de ayuda)  
+> **Implementación:** Route Handlers de Next.js (`apps/web/src/app/api/**/route.ts`) · **Versión:** 2.2 (22/11/2026: asistente de canchas)  
 > **Autenticación:** sesión de Supabase Auth en cookies (la envía el navegador); la base de datos valida el rol con `auth.uid()`.
 
 ---
@@ -39,6 +39,7 @@
 | GET | `/api/admin/usuarios?buscar=&filtro=` | Admin | Hasta 100 cuentas; busca por nombre, correo o celular; filtro `todos`, `jugadores`, `duenos`, `admins`, `suspendidos` | `200 { ok, usuarios }` |
 | PATCH | `/api/admin/usuarios/{id}` | Admin | `{ accion: "cambiar_rol", rol: "jugador" \| "dueno" }` \| `{ accion: "suspender", motivo }` \| `{ accion: "reactivar" }` | `200 { ok, usuario }` |
 | PUT | `/api/admin/ajustes` | Admin | WhatsApp de ayuda: `{ whatsappSoporte: "966123456" }` (`""` = quitar el botón) | `200 { ok, ajustes }` |
+| POST | `/api/asistente` | Público (la IA solo con sesión) | Chat del asistente: `{ mensaje, filtros?, historial? }` (mensaje de hasta 500 letras; se usan los últimos 6 mensajes del historial). Máximo 20 mensajes por minuto por IP | `200 { ok, respuesta: { texto, modo, aviso, filtros, entendido, recomendaciones, sugerencias } }` |
 
 > **Documentación interactiva:** https://reservaya-ayacucho.vercel.app/api-docs (Swagger UI). La especificación OpenAPI 3 está en `apps/web/public/openapi.yaml` y una prueba automática comprueba que describe exactamente las rutas del código.
 
@@ -75,13 +76,13 @@ Todas las rutas responden los errores con el mismo formato: `{ ok: false, codigo
 
 | Código HTTP | Cuándo | Códigos de ejemplo |
 |---|---|---|
-| 400 | Datos inválidos | `DATOS_INVALIDOS`, `DATOS_INVALIDOS_RESERVA`, `DATOS_INVALIDOS_AGENDA`, `DATOS_INVALIDOS_LOCAL`, `DATOS_INVALIDOS_USUARIO`, `HORARIO_PASADO`, `IMAGEN_INVALIDA`, `MONTO_INVALIDO`, `FALTA_MOTIVO`, `AJUSTES_INVALIDOS`, `HORARIO_ATENCION_INVALIDO`, `PRECIO_PUNTA_INVALIDO`, `SERVICIO_INVALIDO`, `ROL_INVALIDO`, `TELEFONO_INVALIDO` |
+| 400 | Datos inválidos | `DATOS_INVALIDOS`, `DATOS_INVALIDOS_RESERVA`, `DATOS_INVALIDOS_AGENDA`, `DATOS_INVALIDOS_LOCAL`, `DATOS_INVALIDOS_USUARIO`, `DATOS_INVALIDOS_ASISTENTE`, `HORARIO_PASADO`, `IMAGEN_INVALIDA`, `MONTO_INVALIDO`, `FALTA_MOTIVO`, `AJUSTES_INVALIDOS`, `HORARIO_ATENCION_INVALIDO`, `PRECIO_PUNTA_INVALIDO`, `SERVICIO_INVALIDO`, `ROL_INVALIDO`, `TELEFONO_INVALIDO` |
 | 401 | Sin sesión | `SIN_SESION` |
 | 403 | Sin permiso | `SOLO_DUENOS`, `SOLO_ADMIN`, `LOCAL_AJENO`, `USUARIO_ES_ADMIN` |
 | 404 | No existe o no es tuyo | `RESERVA_NO_ENCONTRADA`, `PROPUESTA_NO_ENCONTRADA`, `PAGO_NO_ENCONTRADO`, `BLOQUEO_NO_ENCONTRADO`, `LOCAL_NO_ENCONTRADO`, `CANCHA_NO_ENCONTRADA`, `USUARIO_NO_ENCONTRADO`, `CUENTA_NO_ENCONTRADA` |
 | 409 | Conflicto | `HORARIO_OCUPADO`, `HORARIO_CERRADO`, `PAGO_YA_ENVIADO`, `RESERVA_VENCIDA`, `LOCAL_DUPLICADO`, `ACCION_NO_PERMITIDA`, `HAY_RESERVAS`, `YA_BLOQUEADO`, `CANCHA_DUPLICADA`, `CANCHA_CON_RESERVAS`, `ULTIMA_CANCHA`, `DUENO_CON_LOCALES`, `CUENTA_SIN_CAMBIO` |
 | 413 | Archivo muy grande | `IMAGEN_GRANDE` |
-| 429 | Demasiados pedidos | `DEMASIADAS_PENDIENTES`, `DEMASIADAS_PROPUESTAS` |
+| 429 | Demasiados pedidos | `DEMASIADAS_PENDIENTES`, `DEMASIADAS_PROPUESTAS`, `DEMASIADOS_MENSAJES` |
 | 500 / 502 | Falla de configuración o de Supabase | `FALTA_CONFIGURAR_SUPABASE`, `SIN_CONEXION`, `DESCONOCIDO` |
 
 La lista completa de códigos y mensajes está en `apps/web/src/modules/compartido/dominio/error-aplicacion.ts`.
@@ -101,6 +102,33 @@ La lista completa de códigos y mensajes está en `apps/web/src/modules/comparti
 | Registro | Cada llamada se guarda en `ai_requests` (modelo, tokens, costo, latencia, estado) |
 | Seguridad | `OPENROUTER_API_KEY` solo en el servidor |
 
+### Asistente de canchas (`POST /api/asistente`)
+
+| Aspecto | Implementación |
+|---|---|
+| Función | Interpretar el mensaje del jugador: intención (`buscar`, `duda`, `saludo`, `otro`) y filtros (distrito, deporte, fecha, hora, franja, servicios, techada, precio máximo, nombre del local) |
+| Cuándo se usa | Solo si las reglas no entendieron con seguridad, la persona inició sesión y hay cupo: 30 consultas por día en total y 10 por cuenta (`fn_cupo_asistente`, límites en `app_settings`) |
+| Modelo | `ai_model_configs` (`chat_assistant`): modelo gratuito y uno de respaldo; 12 s por modelo |
+| Respuesta | JSON con esquema estricto; se valida con `validarInterpretacionIA()` (distritos, deportes, servicios y fechas dentro de los 14 días) |
+| Regla | La IA nunca elige locales, precios ni horas: salen del catálogo publicado y de la grilla (`fn_disponibilidad_local`) |
+| Si falla | Responden las reglas y la respuesta trae un `aviso`; el chat nunca se queda sin contestar |
+| Registro | Cada llamada en `ai_requests` con `fn_registrar_ia_asistente`; el admin ve el uso del día en su panel (`fn_uso_ia_hoy`) |
+
+Ejemplo:
+
+```json
+// POST /api/asistente  { "mensaje": "fútbol en Los Andes pasado mañana a las 7" }
+{ "ok": true, "respuesta": {
+  "texto": "Para el martes 24 de noviembre a las 19:00 encontré 1 local con canchas de fútbol en «Complejo Los Andes» y esa hora libre. Toca una hora para reservarla:",
+  "modo": "reglas", "aviso": null,
+  "filtros": { "nombre": "Complejo Los Andes", "deporte": "Fútbol", "fecha": "2026-11-24", "hora": "19:00", "...": "..." },
+  "entendido": ["Complejo Los Andes", "Fútbol", "mar 24 nov", "19:00"],
+  "recomendaciones": [{ "slug": "complejo-los-andes", "nombre": "Complejo Los Andes", "exacta": true,
+    "horas": [{ "hora": "19:00", "hasta": "20:00", "cancha": "Cancha 1", "precio": 80,
+      "enlace": "/cancha/complejo-los-andes?fecha=2026-11-24&cancha=…&desde=19:00&hasta=20:00" }] }],
+  "sugerencias": ["Una hora más tarde", "¿Cómo pago el adelanto?"] } }
+```
+
 ---
 
 ## 5. Estrategia de caché y CDN
@@ -113,6 +141,7 @@ La lista completa de códigos y mensajes está en `apps/web/src/modules/comparti
 | Caché de Next.js (`"use cache"`) | Ficha pública del local | 1 min | Al vencer o al cambiar precios, horario, servicios o el estado del local |
 | Caché de Next.js (`"use cache"`, etiqueta `ajustes-publicos`) | WhatsApp de ayuda (botón "Ayuda" de todas las páginas) | horas | Al guardarlo en `/admin` (`revalidateTag`, al instante) |
 | ~~Redis (Upstash)~~ | Pospuesto (ADR-013): el CDN ya es la caché compartida entre instancias | — | — |
-| Sin caché (`private, no-store`) | Reservas, pagos y datos de la cuenta | — | Nunca se guardan en caché compartida |
+| Memoria del servidor | Mensajes al asistente por IP | 1 min | Al vencer (freno aproximado: cada instancia lleva su cuenta) |
+| Sin caché (`private, no-store`) | Reservas, pagos, datos de la cuenta y respuestas del asistente | — | Nunca se guardan en caché compartida. El asistente sí lee el catálogo en memoria y la ficha en caché |
 
 > Aunque la grilla en caché muestre libre un horario recién tomado, **la base de datos igual impide la doble reserva**: el segundo pedido recibe `409`.
