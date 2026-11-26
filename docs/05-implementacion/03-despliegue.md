@@ -1,6 +1,6 @@
 # Despliegue
 
-> **Proyecto:** ReservaYa Ayacucho · **Entornos:** desarrollo local y producción · **Versión:** 2.1 (26/11/2026: dominio propio)
+> **Proyecto:** ReservaYa Ayacucho · **Entornos:** desarrollo local y producción · **Versión:** 2.2 (26/11/2026: dominio propio y copias de seguridad)
 
 ---
 
@@ -14,7 +14,7 @@
 | **Supabase** | PostgreSQL, Auth y Storage (bucket privado `comprobantes`), región São Paulo | En uso |
 | **OpenRouter** | Modelos de IA gratuitos para leer comprobantes y para el asistente | En uso |
 | **OpenStreetMap** | Teselas del mapa (sin clave) | En uso |
-| **GitHub Actions** | Lint, tipos, pruebas con cobertura (Jest) y build en cada push (`.github/workflows/ci.yml`) | En uso |
+| **GitHub Actions** | Lint, tipos, pruebas con cobertura (Jest), build y E2E en cada push (`ci.yml`); copia de seguridad semanal cifrada de la base (`respaldo.yml`) | En uso |
 | **Upstash** | Redis para la caché compartida | Pospuesto (ADR-013) |
 | **Cloudflare** | DNS y CDN delante de Vercel | Descartado: Vercel ya es la CDN y no recomienda otro proxy delante (ADR-016) |
 
@@ -113,10 +113,51 @@ X-Vercel-Id: gru1::gru1::kmb5c-1795733251808-353e2289d36c
 
 ---
 
-## 5. Monitoreo
+## 5. Copias de seguridad
+
+Supabase gratis no guarda copias de seguridad. El workflow `.github/workflows/respaldo.yml` (ADR-017, spec 015) hace una **cada domingo a las 03:17 de Ayacucho** y también cuando se pide a mano (Actions → «Respaldo de la base de datos» → **Run workflow**).
+
+| Paso del workflow | Qué hace |
+|---|---|
+| 1 | Revisa que existan los secretos y que la cadena sea la del Session pooler |
+| 2 | `supabase db dump`: `roles.sql`, `schema.sql` y `data.sql` (incluye `auth.users`) |
+| 3 | Escribe en el resumen de la ejecución cuántas filas tiene cada tabla (sin datos) |
+| 4 | Restaura el respaldo en una base vacía; si falla, la ejecución sale en rojo y GitHub avisa por correo |
+| 5 | Lo cifra con GPG AES-256 y borra los archivos sin cifrar |
+| 6 | Guarda `reservaya-respaldo-AAAA-MM-DD.tar.gz.gpg` como artifact por 90 días (unas 13 copias) |
+
+**Secretos del repositorio** (GitHub → Settings → Secrets and variables → Actions):
+
+| Secreto | Valor |
+|---|---|
+| `SUPABASE_DB_URL` | Supabase → **Connect** → **Session pooler** → URI, con la contraseña de la base en lugar de `[YOUR-PASSWORD]` (`postgresql://postgres.<ref>:…@aws-…-sa-east-1.pooler.supabase.com:5432/postgres`). La conexión directa no sirve: es IPv6 y GitHub solo usa IPv4 |
+| `BACKUP_PASSPHRASE` | Frase de 16 caracteres o más. **Se guarda también fuera de GitHub**: GitHub no deja volver a leer un secreto, y sin la frase el respaldo no se puede abrir |
+
+**Restaurar** (en Git Bash, que ya trae `gpg`; para el último paso hace falta `psql`):
+
+```bash
+# 1. Descargar el artifact de la ejecución (Actions → ejecución → Artifacts) y descomprimir el .zip
+# 2. Descifrar (pide la frase) y desempaquetar
+gpg --decrypt --output respaldo.tar.gz reservaya-respaldo-*.tar.gz.gpg
+tar -xzf respaldo.tar.gz
+# 3. Cargarlo en un proyecto NUEVO de Supabase (nunca encima de producción)
+psql --single-transaction --variable ON_ERROR_STOP=1 \
+  --file roles.sql --file schema.sql \
+  --command 'SET session_replication_role = replica' \
+  --file data.sql --dbname "$URL_DEL_PROYECTO_NUEVO"
+```
+
+Después se ejecutan en el proyecto nuevo las migraciones posteriores al respaldo (si las hubiera), se cambian las variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` en Vercel y se vuelve a publicar.
+
+**Qué no cubre:** las capturas del bucket `comprobantes` (Storage) ni la configuración del panel de Supabase (Auth → URL Configuration, plantillas de correo). Los pagos ya revisados quedan registrados en la base.
+
+---
+
+## 6. Monitoreo
 
 | Qué | Dónde |
 |---|---|
 | Errores y registros del servidor | Vercel → proyecto → Logs |
 | Uso y costo de la IA | Tabla `ai_requests` y panel de OpenRouter |
 | Base de datos | Supabase → Reports |
+| Copias de seguridad | GitHub → Actions → «Respaldo de la base de datos» (resumen con filas por tabla; correo de GitHub si falla) |

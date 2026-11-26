@@ -32,6 +32,7 @@
 | 9 | Servicios, usuarios y WhatsApp | HU01, HU02, HU11, HU12 | Servicios del local y filtro del mapa (RF01, RF03), gestión de usuarios (RF08), contacto y ayuda por WhatsApp con enlaces `wa.me` (RF15, ADR-014) (spec 012) | Hecho (Sprint 2) |
 | 10 | Asistente con IA | HU08 | Chat que entiende lo que pide el jugador, muestra locales con horas libres reales y un enlace para reservarlas, y responde dudas; reglas primero e IA de OpenRouter solo cuando hace falta, con cupo diario (RF09, ADR-015) (spec 013) | Hecho (Sprint 2) |
 | 11 | Dominio, CDN y avisos por correo | HU10 | Dominio propio `reservaya-ayacucho.app` (Name.com, GitHub Student Pack) con DNS directo a la CDN de Vercel (ADR-016) · correos de confirmación, rechazo, cancelación y recordatorio (RF10) | Dominio y CDN hechos (26/11/2026); correos siguiente |
+| 12 | Preparar la prueba piloto | — | Copia de seguridad semanal, comprobada y cifrada, con GitHub Actions (ADR-017, spec 015, EQ-06) · política de privacidad y términos | Respaldo hecho (26/11/2026); privacidad siguiente |
 
 ---
 

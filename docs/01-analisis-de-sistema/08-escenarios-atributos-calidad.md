@@ -65,6 +65,19 @@
 | **Verificación** | Revisar los cambios de código, ejecutar las pruebas e inspeccionar las dependencias entre módulos. |
 | **Estado** | **Cumple para la IA (22/11/2026):** el modelo, los de respaldo, la temperatura y las instrucciones de cada función (`receipt_ocr` y `chat_assistant`) se cambian con un `UPDATE` en `ai_model_configs`, sin tocar código ni volver a publicar. Los dos adaptadores comparten el cliente de OpenRouter (`pedirJSON`), y cada caso de uso depende solo de su puerto (`LectorComprobantes`, `InterpreteIA`). Pruebas obligatorias: las de Jest de los módulos `pagos` y `asistente` (en el CI). |
 
+## EQ-06. Recuperabilidad: pérdida de datos
+
+| Elemento | Descripción |
+|---|---|
+| **Atributo de calidad** | Recuperabilidad |
+| **Fuente** | Error humano (borrado o cambio equivocado en la base), falla del proveedor o pérdida del proyecto de Supabase |
+| **Estímulo** | Se pierden o dañan reservas, pagos o cuentas de la prueba piloto. |
+| **Condición** | Producción con el plan gratis de Supabase, que no guarda copias de seguridad. |
+| **Respuesta esperada** | Existe un respaldo reciente, cifrado y ya comprobado, que se puede restaurar en un proyecto nuevo de Supabase. |
+| **Medida** | Se pierde como máximo una semana de datos (RPO ≤ 7 días); la restauración se hace en menos de 1 hora siguiendo la guía de `docs/05-implementacion/03-despliegue.md`. |
+| **Verificación** | Cada ejecución del workflow `respaldo.yml` restaura el respaldo en una base vacía antes de guardarlo; si falla, GitHub avisa por correo. |
+| **Estado** | Implementado (26/11/2026, ADR-017, spec 015). Probado en el sandbox con la base de pruebas: cifrado, descifrado y restauración correctos y frase equivocada rechazada. La primera ejecución en producción queda registrada en Actions. |
+
 ## Resumen de escenarios
 
 | Código | Atributo de calidad | Qué se busca comprobar |
@@ -74,3 +87,4 @@
 | EQ-03 | Disponibilidad | Que se pueda reservar aunque falle un servicio externo. |
 | EQ-04 | Seguridad | Que las operaciones protegidas no puedan ejecutarse sin autorización. |
 | EQ-05 | Mantenibilidad | Que los cambios puedan realizarse sin afectar innecesariamente otras funciones. |
+| EQ-06 | Recuperabilidad | Que una pérdida de datos se pueda recuperar con un respaldo de hace 7 días como máximo. |
