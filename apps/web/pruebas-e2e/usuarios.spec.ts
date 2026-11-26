@@ -83,7 +83,10 @@ test("suspende una cuenta: no puede ingresar ni reservar y ve el motivo; luego s
   await visitante.contexto.close();
 
   // El admin la reactiva desde el filtro "Suspendidas"
-  await principal(page).getByRole("group", { name: "Tipo de cuenta" }).getByRole("button", { name: "Suspendidas" }).click();
+  const chipSuspendidas = principal(page).getByRole("group", { name: "Tipo de cuenta" }).getByRole("button", { name: "Suspendidas" });
+  await chipSuspendidas.click();
+  // Esperar la lista filtrada: si se toca "Reactivar" en la lista anterior, al llegar la nueva se pierde el aviso
+  await expect(chipSuspendidas).toHaveAttribute("aria-pressed", "true");
   const suspendida = cuenta(page, "Pedro Rojas");
   await expect(suspendida).toContainText("Suspendida: Reservas falsas repetidas");
   await suspendida.getByRole("button", { name: "Reactivar" }).click();

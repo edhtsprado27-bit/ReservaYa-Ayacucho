@@ -1,6 +1,7 @@
 // Pruebas de integración de la API REST: se llaman las rutas reales de
 // src/app/api (presentación) que usan los casos de uso (aplicación) y los
 // repositorios (infraestructura). Solo Supabase se reemplaza por uno falso.
+import { fechaLima, sumarDias } from "@/modules/reservas/dominio/tiempo";
 import { crearSupabaseFalso, ID_CANCHA, ID_LOCAL, ID_PAGO, ID_RESERVA, PNG, type RespuestaRpc } from "../apoyo/supabase-falso";
 
 // Fuera de Next.js no existe el contexto del pedido: se simulan connection(), la caché y la sesión
@@ -51,6 +52,7 @@ function cargar() {
     usuarios: require("@/app/api/admin/usuarios/route"),
     usuarioId: require("@/app/api/admin/usuarios/[id]/route"),
     ajustes: require("@/app/api/admin/ajustes/route"),
+    asistente: require("@/app/api/asistente/route"),
     docs: require("@/app/api-docs/route"),
   };
 }
@@ -583,6 +585,105 @@ describe("WhatsApp de ayuda (admin)", () => {
     expect((await malo.json()).codigo).toBe("TELEFONO_INVALIDO");
     expect((await ajustes.PUT(json("/api/admin/ajustes", "PUT", "no es json"))).status).toBe(400);
     expect((await ajustes.PUT(json("/api/admin/ajustes", "PUT", { whatsappSoporte: "" }))).status).toBe(403);
+  });
+});
+
+describe("POST /api/asistente", () => {
+  const manana = sumarDias(fechaLima(new Date()), 1);
+  const localDemo = {
+    id: ID_LOCAL, slug: "cancha-demo", nombre: "Cancha Demo", distrito: "Ayacucho", direccion: "Jr. Demo 123", referencia: null, lat: -13.16, lng: -74.22,
+    telefono: null, adelanto_pct: 50, minutos_apartado: 15, horas_cancelacion: 6, servicios: [],
+    canchas: [{ id: ID_CANCHA, nombre: "Cancha 1", deporte: "futbol", techada: false, minutos_turno: 60, min_minutos: 60, max_minutos: 180, precio_desde: 50 }],
+  };
+  const datos = {
+    fn_catalogo_canchas: { data: [fila] },
+    fn_local_publico: { data: localDemo },
+    fn_disponibilidad_local: {
+      data: ["19", "20", "21"].map((h) => ({ cancha_id: ID_CANCHA, inicio: `${manana}T${h}:00:00-05:00`, fin: `${manana}T${Number(h) + 1}:00:00-05:00`, estado: h === "20" ? "ocupado" : "libre", precio: "50" })),
+    },
+  };
+  const preguntar = (ruta: { POST: (r: Request) => Promise<Response> }, cuerpo: unknown, ip = "200.1.1.1") =>
+    ruta.POST(new Request("http://localhost/api/asistente", { method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": ip }, body: JSON.stringify(cuerpo) }));
+
+  afterEach(() => {
+    delete process.env.OPENROUTER_API_KEY;
+  });
+
+  it("busca con las reglas en el catálogo y la grilla reales, sin caché", async () => {
+    const { asistente } = preparar(datos);
+    const res = await preguntar(asistente, { mensaje: "fútbol mañana a las 8 pm" });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    const { ok, respuesta } = await res.json();
+    expect(ok).toBe(true);
+    expect(respuesta).toEqual(expect.objectContaining({ modo: "reglas", aviso: null }));
+    expect(respuesta.texto).toBe("A las 20:00 no hay canchas de fútbol libres mañana, pero estas horas cercanas sí:");
+    expect(respuesta.recomendaciones).toEqual([
+      expect.objectContaining({
+        slug: "cancha-demo",
+        exacta: false,
+        horas: [
+          expect.objectContaining({ hora: "19:00", enlace: `/cancha/cancha-demo?fecha=${manana}&cancha=${ID_CANCHA}&desde=19:00&hasta=20:00` }),
+          expect.objectContaining({ hora: "21:00" }),
+        ],
+      }),
+    ]);
+    expect(respuesta.filtros).toEqual(expect.objectContaining({ deporte: "Fútbol", fecha: manana, hora: "20:00" }));
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_local_publico", { p_slug: "cancha-demo" });
+    expect(supabase.rpc).not.toHaveBeenCalledWith("fn_cupo_asistente", expect.anything()); // sin clave de IA no se revisa el cupo
+  });
+
+  it("con clave de IA: revisa el cupo, pregunta a OpenRouter y registra la llamada", async () => {
+    process.env.OPENROUTER_API_KEY = "clave-de-prueba";
+    const fetchFalso = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: "gen-1",
+        model: "google/gemma-4-31b-it:free",
+        choices: [{ message: { content: JSON.stringify({ intencion: "duda", respuesta: "Puedes pagar por Yape o Plin.", filtros: {} }) } }],
+        usage: { prompt_tokens: 1000, completion_tokens: 40, cost: 0 },
+      }),
+    }));
+    global.fetch = fetchFalso as unknown as typeof fetch;
+    const { asistente } = preparar({
+      ...datos,
+      fn_cupo_asistente: { data: { permitido: true, motivo: null, limite_cuenta: 10 } },
+      fn_config_ia: { data: { modelo: "google/gemma-4-31b-it:free", respaldo: ["openrouter/free"], temperatura: 0.2, max_tokens: 1500, prompt: null, version: "asistente-v1" } },
+      fn_registrar_ia_asistente: { data: null },
+    });
+    const res = await preguntar(asistente, { mensaje: "oye y si mi amigo me pasa la plata, ¿cómo le hago para que llegue al dueño?" });
+    const { respuesta } = await res.json();
+    expect(respuesta).toEqual(expect.objectContaining({ modo: "ia", texto: "Puedes pagar por Yape o Plin." }));
+    expect(fetchFalso).toHaveBeenCalledTimes(1);
+    expect(supabase.rpc).toHaveBeenCalledWith("fn_registrar_ia_asistente", { p_ia: expect.objectContaining({ estado: "success", tokens_entrada: 1000 }) });
+  });
+
+  it("sin sesión, la IA no se usa y se avisa", async () => {
+    process.env.OPENROUTER_API_KEY = "clave-de-prueba";
+    const fetchFalso = jest.fn();
+    global.fetch = fetchFalso as unknown as typeof fetch;
+    const { asistente } = preparar({ ...datos, fn_cupo_asistente: { data: { permitido: false, motivo: "SIN_SESION", limite_cuenta: 10 } } });
+    const { respuesta } = await (await preguntar(asistente, { mensaje: "cuéntame un chiste" })).json();
+    expect(respuesta.modo).toBe("reglas");
+    expect(respuesta.aviso).toMatch(/Si inicias sesión/);
+    expect(fetchFalso).not.toHaveBeenCalled();
+  });
+
+  it("valida el mensaje", async () => {
+    const { asistente } = preparar(datos);
+    const res = await preguntar(asistente, { mensaje: "" });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ ok: false, codigo: "DATOS_INVALIDOS_ASISTENTE", error: expect.stringMatching(/500 letras/) });
+  });
+
+  it("frena a quien manda más de 20 mensajes por minuto", async () => {
+    const { asistente } = preparar(datos);
+    for (let i = 0; i < 20; i++) expect((await preguntar(asistente, { mensaje: "hola" }, "200.9.9.9")).status).toBe(200);
+    const res = await preguntar(asistente, { mensaje: "hola" }, "200.9.9.9");
+    expect(res.status).toBe(429);
+    expect((await res.json()).codigo).toBe("DEMASIADOS_MENSAJES");
+    expect((await preguntar(asistente, { mensaje: "hola" }, "200.8.8.8")).status).toBe(200); // otra IP sí puede
   });
 });
 
