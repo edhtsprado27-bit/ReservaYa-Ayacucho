@@ -1,0 +1,129 @@
+# Copia de seguridad semanal de la base de datos de producción (Supabase).
+# Cada domingo, y cuando se pida a mano ("Run workflow"), descarga los roles,
+# el esquema y los datos con la CLI de Supabase, comprueba que se puedan
+# restaurar en una base vacía, los cifra con GPG (AES-256) y los guarda 90 días
+# como "artifact" de esta ejecución. Nunca se suben sin cifrar ni se guardan en
+# el repositorio, porque tienen datos personales (ADR-017, spec 015).
+#
+# Secretos necesarios (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL   cadena del "Session pooler" de Supabase (IPv4)
+#   BACKUP_PASSPHRASE frase para cifrar (mínimo 16 caracteres); sin ella no se
+#                     puede abrir el respaldo, así que se guarda fuera de GitHub
+name: Respaldo de la base de datos
+
+on:
+  schedule:
+    - cron: "17 8 * * 0" # domingos 08:17 UTC = 03:17 en Ayacucho
+  workflow_dispatch:
+
+concurrency:
+  group: respaldo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    name: Respaldar, comprobar y cifrar
+    if: github.repository == 'edhtsprado27-bit/ReservaYa-Ayacucho'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Revisar los secretos
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Faltan los secretos SUPABASE_DB_URL o BACKUP_PASSPHRASE (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          if [ "${#BACKUP_PASSPHRASE}" -lt 16 ]; then
+            echo "::error::BACKUP_PASSPHRASE debe tener al menos 16 caracteres."
+            exit 1
+          fi
+          case "$SUPABASE_DB_URL" in
+            *pooler.supabase.com*) ;;
+            *) echo "::error::SUPABASE_DB_URL debe ser la cadena del Session pooler (…pooler.supabase.com:5432…): GitHub no llega a la conexión directa (IPv6)."; exit 1 ;;
+          esac
+
+      - name: Instalar la CLI de Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Respaldar roles, esquema y datos
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir respaldo
+          supabase db dump --remote="$SUPABASE_DB_URL" -f respaldo/roles.sql --role-only
+          supabase db dump --remote="$SUPABASE_DB_URL" -f respaldo/schema.sql
+          supabase db dump --remote="$SUPABASE_DB_URL" -f respaldo/data.sql --data-only --use-copy \
+            -x "storage.buckets_vectors" -x "storage.vector_indexes"
+          for f in roles schema data; do
+            test -s "respaldo/$f.sql" || { echo "::error::respaldo/$f.sql salió vacío"; exit 1; }
+          done
+
+      - name: Resumen (filas por tabla, sin datos)
+        working-directory: ${{ runner.temp }}
+        run: |
+          awk '
+            /^COPY / { tabla=$2; gsub(/"/, "", tabla); n=0; dentro=1; next }
+            dentro && /^\\\.$/ { print tabla "|" n; dentro=0; next }
+            dentro { n++ }
+          ' respaldo/data.sql | grep -E '^(public\.|auth\.users\|)' | sort > filas.txt
+          for t in public.bookings public.payments public.venues public.users; do
+            grep -q "^$t|" filas.txt || { echo "::error::El respaldo no tiene la tabla $t"; exit 1; }
+          done
+          {
+            echo "### Respaldo del $(date -u +%Y-%m-%d)"
+            echo ""
+            echo "| Tabla | Filas |"
+            echo "|---|---:|"
+            sed 's/|/ | /; s/^/| /; s/$/ |/' filas.txt
+            echo ""
+            echo "Tamaño sin cifrar: $(du -ch respaldo/*.sql | tail -1 | cut -f1)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comprobar que el respaldo se puede restaurar
+        working-directory: ${{ runner.temp }}
+        run: |
+          supabase init --workdir "$RUNNER_TEMP/prueba"
+          supabase db start --workdir "$RUNNER_TEMP/prueba"
+          # La salida va a un archivo: si algo falla solo se muestran las líneas
+          # ERROR (sin los DETAIL, que pueden traer datos personales).
+          if ! psql --quiet --single-transaction --variable ON_ERROR_STOP=1 \
+              --file respaldo/roles.sql \
+              --file respaldo/schema.sql \
+              --command 'SET session_replication_role = replica' \
+              --file respaldo/data.sql \
+              --dbname 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' > restaurar.log 2>&1; then
+            grep -E 'ERROR:' restaurar.log | head -5 || true
+            echo "::error::El respaldo no se pudo restaurar en una base vacía."
+            exit 1
+          fi
+          psql --tuples-only --no-align --dbname 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' \
+            --command 'SELECT count(*) FROM public.bookings' > reservas.txt
+          echo "Restaurado en una base vacía: $(cat reservas.txt) reservas." >> "$GITHUB_STEP_SUMMARY"
+          supabase stop --workdir "$RUNNER_TEMP/prueba" --no-backup
+
+      - name: Cifrar con AES-256
+        working-directory: ${{ runner.temp }}
+        run: |
+          archivo="reservaya-respaldo-$(date -u +%Y-%m-%d).tar.gz.gpg"
+          tar -czf respaldo.tar.gz -C respaldo roles.sql schema.sql data.sql
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 --output "$archivo" respaldo.tar.gz
+          shred -u respaldo.tar.gz respaldo/*.sql
+          echo "ARCHIVO=$archivo" >> "$GITHUB_ENV"
+          echo "Archivo cifrado: \`$archivo\` ($(du -h "$archivo" | cut -f1))." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar el respaldo cifrado (90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVO }}
+          path: ${{ runner.temp }}/${{ env.ARCHIVO }}
+          retention-days: 90
+          compression-level: 0
+          if-no-files-found: error
